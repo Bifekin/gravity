@@ -13,7 +13,7 @@ var shooting_mode = false;//是否处于可以鼠标发射模型
 var selectingPlanet = null;//鼠标正在选中的行星
 var selectingSun = null;//鼠标正在选中的太阳
 var selectedObject = null;//上一个选中的对象（太阳或行星）或者当前选中的对象(如果存在)
-var planteID  = 1; //行星编号
+var planteID  = {value:1}; //行星编号
 
 //设置背景
 let backgroundImage; //设置背景图片
@@ -36,7 +36,7 @@ let select;
 
 //模型文件位置
 modelName = "model_1.json";//保存的模型名称
-loadjsonPath =  'model/twoStar.json';//加载的模型位置
+loadjsonPath =  'model/threeBody_8.json';//加载的模型位置
 
 
 function preload() {
@@ -54,12 +54,10 @@ function setup() {
 
 	/* 创建一个图层用于绘制轨迹 */
 	trailLayer = createGraphics(width, height);
-	
-	// 创建一个图形对象
-    graphicsLayer = createGraphics(windowWidth, windowHeight, WEBGL);
+	// 创建一个渲染图层对象用于光晕渲染
+    haloLayer = createGraphics(windowWidth, windowHeight, WEBGL);
 
-	/* 设置帧率 */
-	// frameRate(120); 
+	/* 设置帧率:  frameRate(120); */
 
 	/* ------------------DOM---------------- */
 
@@ -153,7 +151,7 @@ function setup() {
 
 function draw() {
 	/* 显示图层 */
-	blendMode(BLEND );
+	blendMode(BLEND);
 	background(backgroundImage);//显示背景图层
 	image(trailLayer, 0, 0);// 显示轨迹图层
 	
@@ -174,8 +172,8 @@ function draw() {
 			let options = select.elt.options;
 			for (let j = 0; j < options.length; j++) {
 				if (options[j].text == planets[to_splice[i]].ID) {
-				options[j].remove();
-				break; 
+					options[j].remove();
+					break; 
 				}
 			}
 			//删除行星
@@ -196,8 +194,8 @@ function draw() {
 			}
 			/* 更新行星位置和速度状态 */
 			for (var i = 0; i < planets.length; i++) {
-				planets[i].update();//更新行星位置和速度，重置加速度为0
-				if(k===0)planets[i].draw();//绘制行星及其轨迹
+				planets[i].update(dt);//更新行星位置和速度，重置加速度为0
+				if(k===0) planets[i].draw(selectingPlanet, trailLayer);//绘制行星及其轨迹
 			}
 		}
 	}else {
@@ -208,15 +206,15 @@ function draw() {
         text("Paused...", width / 2, height/2 - 50);
 		
 		for (var i = 0; i < planets.length ; i++) {//绘制行星及其轨迹
-			planets[i].draw();
+			planets[i].draw(selectingPlanet, trailLayer);
 		}
 	}
 
 
 	/* -------------渲染光晕---------------- */
-	graphicsLayer.shader(haloShader);// 使用光晕着色器 每次渲染帧(frame)时套用Shader
+	haloLayer.shader(haloShader);// 使用光晕着色器 每次渲染帧(frame)时套用Shader
 	// 利用p5.js的rect()建立一个矩形，这个矩形将被shader拿來处理
-	graphicsLayer.rect(0, 0, windowWidth, windowHeight);//不管设定多大，矩形都是整个画布大小
+	haloLayer.rect(0, 0, windowWidth, windowHeight);//不管设定多大，矩形都是整个画布大小
 	// 传送参数給Shader
 	haloShader.setUniform("u_resolution", [windowWidth, windowHeight]);//从左下角开始的矩形
 	if(planets.length!==0){
@@ -238,16 +236,16 @@ function draw() {
 	if(planets.length === 0 && sun === null) {
 		haloShader.setUniform('u_numPlanets', 0);
 	}
-	graphicsLayer.resetShader();// 停止使用光晕着色器
+	haloLayer.resetShader();// 停止使用光晕着色器
 	blendMode(ADD);
-	image(graphicsLayer, 0, 0);
+	image(haloLayer, 0, 0);
 
 	/* 太阳存在则绘制太阳 */
-	if(sun !== null) sun.draw();
+	if(sun !== null) sun.draw(selectingSun);
 	
 	if(selectingPlanet === null && selectingSun === null){//选中状态禁用发射器
 		/* 更新发射器状态并且绘制发射器 */
-		shoot.update();
+		shoot.update(Gravity, sunMass, planteID, planets, select, shooting_mode);
 		shoot.draw();
 	} 
 
@@ -330,345 +328,7 @@ function mouseClicked() {
 	}
 }
 
-
-function Shooter() {
-	this.x1 = 0;//发射器起点
-	this.y1 = 0;
-	this.x2 = 0;//发射器终点
-	this.y2 = 0;
-	this.R = 0;//发射器颜色
-	this.G = 0;
-	this.B = 0;
-	this.vel = 0;//发射器的初速度
-	this.vel_x = 0;
-	this.vel_y = 0;
-	this.shooting=false;//标记是否处于鼠标发射模型
-	this.c_shooting=false;//标记是否处于键盘发射模型(o键)
-	this.touchKey=false;//用于避免重复触发键盘输入
-
-	this.update = function() {
-
-		/* 标准轨道发射器 */
-		if((!this.shooting) && (keyIsPressed) && (key === "o" || key ==='O') && (!this.c_shooting) && (!this.touchKey) && sun !== null) {//有些变量是p5.js中已经定义
-			this.c_shooting = true;
-			this.touchKey = true;
-			this.R = floor(random(255));
-			this.G = floor(random(255));
-			this.B = floor(random(255));
-			this.vel = 0;
-			this.vel_x = 0;
-			this.vel_y = 0;
-
-	
-			this.x1 = mouseX;
-			this.x2 = mouseX;
-			this.y1 = sun.pos.y;
-			this.vel = sqrt(Gravity * sunMass/(abs(sun.pos.x - mouseX)));//sqrt(G*M/R)
-			this.vel_y = this.vel;
-			this.y2 = this.y1 - (10 * this.vel_y);
-		}
-		if((!this.shooting) && (keyIsPressed) && (key === "o" || key==='O') && (this.c_shooting) && (!this.touchKey)) {
-			this.touchKey = true;
-			
-			this.vel_y = -this.vel_y;
-			this.y2 = this.y1 - (10 * this.vel_y);
-		}//微调方向
-
-		if((!this.shooting) && (keyIsPressed)  && (keyCode == ENTER) && (this.c_shooting) && (!this.touchKey)) {
-			this.c_shooting = false;
-			this.touchKey = true;
-
-			append(planets, new Planet(this.x1, this.y1,this.vel_x,this.vel_y,this.R,this.G,this.B,planetMass,planteID,true,0));
-			select.option(planteID);
-			const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
-			selectElement.options[selectElement.length - 1].style.color = `rgb(${this.R}, ${this.G}, ${this.B})`;
-			planteID = planteID + 1;
-		}//按下Enter确认行星
-
-		if((!this.shooting) && (keyIsPressed)  && (keyCode == ESCAPE) && (this.c_shooting) && (!this.touchKey)) {
-			this.c_shooting = false;
-			this.touchKey = true;
-		}//按下Esc取消发射器
-
-		if (!keyIsPressed) {
-			this.touchKey = false;
-		}
-
-
-
-		/* 鼠标发射器 */
-		if(shooting_mode && (!this.shooting) && (mouseIsPressed) && (!this.c_shooting)) {
-			this.shooting = true;
-			this.x1 = mouseX;
-			this.y1 = mouseY;
-			this.R = floor(random(255));
-			this.G = floor(random(255));
-			this.B = floor(random(255));
-		}
-
-		if (shooting_mode && this.shooting && mouseIsPressed) {
-			this.x2 = mouseX;
-			this.y2 = mouseY;
-			this.vel = int(dist(this.x1, this.y1, this.x2, this.y2))/10;
-		}
-
-		if (shooting_mode && !mouseIsPressed && this.shooting) {
-			var alpha = 0;
-			var x_dir = 0;
-			var y_dir = 0;
-
-			if (this.vel > 5) {
-				if (this.x1 != this.x2) {
-					alpha = atan(abs((this.y2 - this.y1)) / abs((this.x2 - this.x1)));
-					this.vel_x = this.vel * cos(alpha);
-					this.vel_y = this.vel * sin(alpha);
-				} else {
-					this.vel_x = 0;
-					this.vel_y = this.vel;
-				}	
-
-				if (this.x2 < this.x1) {
-					if(this.y2 < this.y1) {
-						x_dir = 1;
-						y_dir = 1;
-					} else {
-						x_dir = 1;
-						y_dir = -1;
-					}
-				} else {
-					if(this.y2 < this.y1) {
-						x_dir = -1;
-						y_dir = 1;
-					} else {
-						x_dir = -1;
-						y_dir = -1;
-					}
-				}
-				append(planets, new Planet(this.x2, this.y2, (x_dir * this.vel_x),(y_dir * this.vel_y),this.R,this.G,this.B,planetMass,planteID));
-				select.option(planteID);
-				const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
-				selectElement.options[selectElement.length - 1].style.color = `rgb(${this.R}, ${this.G}, ${this.B})`;
-				planteID = planteID + 1;
-			}
-			this.shooting = false;
-		}
-	}
-
-	this.draw = function() {
-			textSize(12);
-			if ((this.shooting) || (this.c_shooting)) {
-				/* Draw the line and the arraow */
-				stroke(255);
-				line(this.x1-5,this.y1, this.x1+5, this.y1);
-				line(this.x1,this.y1-5, this.x1, this.y1+5);
-				line(this.x1, this.y1, this.x2, this.y2);
-
-				/* Draw the futur planet */
-				noStroke();
-				fill(this.R,this.G,this.B);
-				ellipse(this.x2, this.y2, 10, 10);
-
-				push();
-				fill(255);
-				translate( (this.x1+this.x2)/2, (this.y1+this.y2)/2 );
-				if (this.x2 > this.x1) {
-			        	rotate( atan2(this.y2-this.y1,this.x2-this.x1) );
-				} else {
-			        	rotate( atan2(this.y1-this.y2,this.x1-this.x2) );
-				}
-				text(nfc(this.vel,1,1), 0, -5);
-				pop();
-			}
-	}
-}
-
-function Sun(x,y,mass) {
-	this.pos = createVector(x, y);
-	this.radius = 10;
-	this.mass = mass;
-	this.R = 255;
-	this.G = 255;
-	this.B = 255;
-
-	this.draw = function() {
-		fill(255);
-		ellipse(this.pos.x, this.pos.y, this.radius*2, this.radius*2); 
-
-		// 如果sun被选中
-		if (selectingSun !== null) {
-			/*绘制虚线框*/
-			push();
-			noFill();
-			stroke(255);
-			strokeWeight(1);
-			ellipse(this.pos.x, this.pos.y, this.radius*2 + 10, this.radius*2 + 10);
-			pop();
-		}
-	}
-
-	this.displayInfo = function () {
-		/* Display planet information */
-		push(); 
-		textSize(16);
-		fill(255);
-		textAlign(LEFT, TOP);
-		text("Sun " , 10, 10);
-		text("Mass: " + this.mass, 10, 30);
-		text("Position: (" + nfc(this.pos.x, 1, 2) + ", " + nfc(this.pos.y, 1, 2) + ")", 10, 50);
-		pop();
-	  };
-}
-
-function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
-	this.R = R || 0;
-	this.G = G || 0;
-	this.B = B || 0;
-	this.pos = createVector(x, y);
-	this.vel = createVector(velx, vely);
-	this.acc = createVector(0, 0);
-	this.prevPos = createVector(0, 0);
-	this.mass = mass;
-	this.radius = 2.5 * Math.log10(this.mass) + 5;
-	this.Gravity = Gravity;
-	this.ID = ID;
-	this.standardOrbit = standardOrbit;//是否为单恒星系统的按键以离心率为e的圆锥曲线标准发射 等价于 初速度满足垂直矢径
-	this.e = e;//单恒星系统行星的离心率，单恒星系统才考虑这个参数,否则为无效参数
-	this.pos_0 = createVector(x, y);//初始位置
-	this.vel_0 = createVector(velx, vely);//初速度
-	this.selectDom = false;//通过select来选中对象
-
-	this.draw = function() {
-		/* Draw planet */
-		push(); // 保存当前画布状态
-		noStroke(); // 不绘制边框
-		fill(255, 255, 255, 250); // 使用指定颜色填充，最后一个参数表示透明度
-		translate(this.pos.x, this.pos.y); // 将坐标原点移动到行星位置
-		rotate(this.vel.heading()); // 根据速度的方向进行旋转
-		ellipse(0, 0, this.radius * 2, this.radius * 2); // 绘制行星，以当前位置为中心
-		pop(); // 恢复之前保存的画布状态
-	
-		// 在轨迹图层上绘制轨迹
-		trailLayer.stroke(this.R, this.G, this.B);
-		if (!this.prevPos.equals(createVector(0, 0))) {
-			trailLayer.strokeWeight(this.radius/100 + 0.8);
-		  	trailLayer.line(this.prevPos.x, this.prevPos.y, this.pos.x, this.pos.y);//我不明白为什么两个图层的坐标尺量是不一样的，刚好还是2倍
-		}
-
-		// 如果行星被鼠标选中，或者被select选中
-		if (selectingPlanet === this || this.selectDom) {
-			/* 绘制虚线框 */
-			push();
-			noFill();
-			stroke(255);
-			strokeWeight(1);
-			ellipse(this.pos.x, this.pos.y, this.radius * 2 + 20, this.radius * 2 + 20);
-			pop();
-		}
-
-		// 可视化速度箭头
-		push();
-		translate(this.pos.x, this.pos.y);
-		rotate(this.vel.heading());
-		let arrowSize = this.vel.mag() * 10; // 箭头的长度等于速度的大小
-		stroke(this.R, this.G, this.B); // 使用行星的颜色
-		strokeWeight(2);
-		fill(this.R, this.G, this.B); // 使用行星的颜色
-		line(0, 0, arrowSize, 0);
-		line(arrowSize, 0, arrowSize - 3, -3);
-		line(arrowSize, 0, arrowSize - 3, 3);
-		pop();
-
-		/* //显示行星ID
-		fill(255);
-        textSize(12);
-        textAlign(CENTER, CENTER);
-        text(this.ID, this.pos.x, this.pos.y); */
-	}
-
-	this.applyForce = function(force) {
-		this.acc.add(force.mult(1.0/this.mass));
-	}
-
-	this.update = function () {
-		this.prevPos = this.pos;
-		this.vel.add(p5.Vector.mult(this.acc, dt)); // 积分
-		this.pos.add(p5.Vector.mult(this.vel, dt));
-		this.acc.mult(0);
-	}	
-
-	this.orbit = function(body) {
-		var gravity_force = 0; 
-		var gravity_force_x = 0; 
-		var gravity_force_y = 0; 
-		var x_dir = 0;
-		var y_dir = 0;
-		var alpha =  0;
-
-
-		/* Gravitational force */
-		var g_dist = dist(this.pos.x,this.pos.y,body.pos.x,body.pos.y)
-		gravity_force = ((this.Gravity * this.mass * body.mass)/(sq(g_dist)));
-		if (body.pos.x != this.pos.x) {
-			alpha = atan(abs((body.pos.y - this.pos.y)) / abs((body.pos.x - this.pos.x)));
-			gravity_force_x = gravity_force * cos(alpha);
-			gravity_force_y = gravity_force * sin(alpha);
-		} else {
-			gravity_force_x = 0;
-			gravity_force_y = gravity_force;
-		}	
-
-		/* Gravitational force direction */
-		if (this.pos.x < body.pos.x) {
-			if(this.pos.y < body.pos.y) {
-				x_dir = 1;
-				y_dir = 1;
-			} else {
-				x_dir = 1;
-				y_dir = -1;
-			}
-		} else {
-			if(this.pos.y < body.pos.y) {
-				x_dir = -1;
-				y_dir = 1;
-			} else {
-				x_dir = -1;
-				y_dir = -1;
-			}
-		}
-
-		/* Apply gravitational force */
-		this.applyForce(createVector((x_dir * gravity_force_x), (y_dir * gravity_force_y)));
-	}
-
-	this.displayInfo = function () {
-		/* Display planet information */
-		push(); 
-		textSize(16);
-		fill(this.R, this.G, this.B, 250);
-		textAlign(LEFT, TOP);
-		text("ID: ", 10, 10);
-		text("Mass: " + this.mass, 10, 50);
-		text("Speed: " + nfc(this.vel.mag(), 1, 2), 10, 70);
-		text("Velocity: (" + nfc(this.vel.x, 1, 2) + ", " + nfc(this.vel.y, 1, 2) + ")", 10, 90);
-		text("Position: (" + nfc(this.pos.x, 1, 2) + ", " + nfc(this.pos.y, 1, 2) + ")", 10, 110);
-		text("初始位置: (" + nfc(this.pos_0.x, 1, 2) + ", " + nfc(this.pos_0.y, 1, 2) + ")", 10, 130);
-		text("初速度: (" + nfc(this.vel_0.x, 1, 2) + ", " + nfc(this.vel_0.y, 1, 2) + ")", 10, 150);
-		if(this.standardOrbit && sun !== null) {
-			if(this.e === 0) text("标准轨迹: 圆",10,190);
-			if(this.e < 1 && this.e > 0) text("标准轨迹: 椭圆",10,190);
-			if(this.e === 1) text("标准轨迹: 抛物线",10,190);
-			if(this.e > 1) text("标准轨迹: 双曲线",10,190)
-			text("离心率: " + nfc(this.e, 2, 2), 10,210);
-			var r0 = abs(sun.pos.x - this.pos_0.x);
-			var v1 = sqrt(Gravity * sunMass/ r0);
-			var v2 = sqrt(2 * Gravity * sunMass / r0);
-			text("对于矢径 r0=" + nfc(r0,1) + " 临界初速度: v1=" + nfc(v1, 1) + " & v2="+ nfc(v2, 1), 10, 230);
-		}
-		pop();
-	};
-}
-
-
+                                              
 
 /*--------------------------------------DOM 函数------------------------------------ */
 function emptyTrack(){
@@ -715,7 +375,8 @@ function updateMass() {//更新质量
 function updateEccentricityInput() {//更新离心率
 	var newEccentricity = float(eccentricityInput.value());// 将输入框的值转换为浮点数
 	
-	if (sun !== null && !isNaN(newEccentricity) && selectedObject && selectedObject!==sun && selectedObject.vel.x==0 && selectedObject.pos.y === sun.pos.y) {//满足条件才能更改离心率
+	//满足条件才能更改离心率
+	if (sun !== null && !isNaN(newEccentricity) && selectedObject && selectedObject!==sun && selectedObject.vel.x==0 && selectedObject.pos.y === sun.pos.y) {
 		selectedObject.e = newEccentricity;
 		var r0 = abs(selectedObject.pos.x - sun.pos.x);//矢径的模
 		var c0_2 = (1 + selectedObject.e) * r0;//圆锥曲线的半正焦弦  若var c0_2 = (1 - selectedObject.e) * r0;时，且0 < e < 1时为小椭圆
@@ -886,10 +547,10 @@ function LoadModel() {
 				 `rgb(${loadData.planets[id].R},
 					  ${loadData.planets[id].G},
 					  ${loadData.planets[id].B})`;
-				planteID = max(planteID,int(id));
+				planteID.value = max(planteID.value,int(id));
 			}
 		}
-		planteID = planteID + 1;
+		planteID.value = planteID.value + 1;
 
 		Gravity = loadData.Gravity;
 		epoch = loadData.epoch;
