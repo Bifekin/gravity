@@ -36,7 +36,7 @@ let select;
 
 //模型文件位置
 modelName = "model_1.json";//保存的模型名称
-loadjsonPath =  'model/threeBody_8.json';//加载的模型位置
+loadjsonPath =  'model/threeBody_circles.json';//加载的模型位置
 
 
 function preload() {
@@ -503,8 +503,7 @@ function saveModel () {
 	saveData.epoch = epoch;
 	saveData.dt = dt;
 
-	let jsonString = JSON.stringify(saveData);
-	saveJSON(jsonString, modelName);
+	saveJSON(saveData, modelName);
 }
 
 function LoadModel() {
@@ -514,47 +513,46 @@ function LoadModel() {
 			options[i].remove();
 		}
 
-		console.log(data);
-		loadData = JSON.parse(data);//不加上这个无法正常加载数据
+		// console.log(data);
 		planets = [];
 		sun = null;
 		// 使用 for...in 遍历 JSON 对象的属性
-		if(loadData.sun === null){
+		if(data.sun === null){
 			sun = null;
 		} else{
-			sunMass = loadData.sun.mass;
-			sun = new Sun(loadData.sun.posx, loadData.sun.posy, sunMass);
+			sunMass = data.sun.mass;
+			sun = new Sun(data.sun.posx, data.sun.posy, sunMass);
 		}
 
-		for (var id in loadData.planets) {
-			if (loadData.planets.hasOwnProperty(id)) {
+		for (var id in data.planets) {
+			if (data.planets.hasOwnProperty(id)) {
 				append(planets, new Planet(
-					loadData.planets[id].posx,
-					loadData.planets[id].posy,
-					loadData.planets[id].velx,
-					loadData.planets[id].vely,
-					loadData.planets[id].R,
-					loadData.planets[id].G,
-					loadData.planets[id].B,
-					loadData.planets[id].mass,
-					loadData.planets[id].ID,
-					loadData.planets[id].standarOrbit,
-					loadData.planets[id].e
+					data.planets[id].posx,
+					data.planets[id].posy,
+					data.planets[id].velx,
+					data.planets[id].vely,
+					data.planets[id].R,
+					data.planets[id].G,
+					data.planets[id].B,
+					data.planets[id].mass,
+					data.planets[id].ID,
+					data.planets[id].standarOrbit,
+					data.planets[id].e
 				));
 				select.option(int(id));
 				const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
 				selectElement.options[selectElement.length - 1].style.color =
-				 `rgb(${loadData.planets[id].R},
-					  ${loadData.planets[id].G},
-					  ${loadData.planets[id].B})`;
+				 `rgb(${data.planets[id].R},
+					  ${data.planets[id].G},
+					  ${data.planets[id].B})`;
 				planteID.value = max(planteID.value,int(id));
 			}
 		}
 		planteID.value = planteID.value + 1;
 
-		Gravity = loadData.Gravity;
-		epoch = loadData.epoch;
-		dt = loadData.dt;
+		Gravity = data.Gravity;
+		epoch = data.epoch;
+		dt = data.dt;
 	});
 }
 
