@@ -13,7 +13,7 @@ function Shooter() {
 	this.c_shooting=false;//标记是否处于键盘发射模型(o键)
 	this.touchKey=false;//用于避免重复触发键盘输入,这种模式常用于检测按键的瞬时触发而不是持续触发
 
-	this.update = function(Gravity, sunMass, planteID, planets, select, shooting_mode) {
+	this.update = function(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode) {
 
 		/* 标准轨道发射器 */
 		if((!this.shooting) && (keyIsPressed) && (key === "o" || key ==='O') && (!this.c_shooting) && (!this.touchKey) && sun !== null) {
@@ -65,7 +65,7 @@ function Shooter() {
 
 
 		/* 鼠标发射器 */
-		if(shooting_mode && (!this.shooting) && (mouseIsPressed) && (!this.c_shooting)) {
+		if(shooting_mode && (!this.shooting) && (mouseIsPressed) && (mouseButton == LEFT) && (!this.c_shooting)) {
 			this.shooting = true;
 			this.x1 = mouseX;
 			this.y1 = mouseY;
@@ -74,7 +74,7 @@ function Shooter() {
 			this.B = floor(random(255));
 		}
 
-		if (shooting_mode && this.shooting && mouseIsPressed) {
+		if (shooting_mode && this.shooting && mouseIsPressed && (mouseButton == LEFT) ) {
 			this.x2 = mouseX;
 			this.y2 = mouseY;
 			this.vel = int(dist(this.x1, this.y1, this.x2, this.y2))/10;

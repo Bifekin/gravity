@@ -3,8 +3,8 @@ function Sun(x,y,mass) {
 	this.radius = 10;
 	this.mass = mass;
 	this.R = 255;
-	this.G = 255;
-	this.B = 255;
+	this.G = 0;
+	this.B = 0;
 
 	this.draw = function(selectingSun) {
 		fill(255);

@@ -3,17 +3,17 @@ function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
 	this.G = G || 0;
 	this.B = B || 0;
 	this.pos = createVector(x, y);
-	this.vel = createVector(velx, vely);
-	this.acc = createVector(0, 0);
+	this.pos_0 = createVector(x, y);//初始位置
 	this.prevPos = createVector(0, 0);
+	this.vel = createVector(velx, vely);
+	this.vel_0 = createVector(velx, vely);//初速度
+	this.acc = createVector(0, 0);
 	this.mass = mass;
 	this.radius = 2.5 * Math.log10(this.mass) + 5;
 	this.Gravity = Gravity;
 	this.ID = ID;
 	this.standardOrbit = standardOrbit;//是否为单恒星系统的按键以离心率为e的圆锥曲线标准发射 等价于 初速度满足垂直矢径
 	this.e = e;//单恒星系统行星的离心率，单恒星系统才考虑这个参数,否则为无效参数
-	this.pos_0 = createVector(x, y);//初始位置
-	this.vel_0 = createVector(velx, vely);//初速度
 	this.selectDom = false;//通过select来选中对象
 
 	this.draw = function(selectingPlanet, trailLayer) {

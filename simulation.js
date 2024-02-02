@@ -27,10 +27,6 @@ var epoch = 500; //每次p5.js函数调用draw()函数时，进行引力计算�
 var dt = 0.1/epoch; //微分时间 和epoch对应，dt小==>误差小, epoch大，卡顿
 
 //DOM
-var massInput;
-var updateMassButton;
-var eccentricityInput;
-var updateEccentricityButton;
 let checkbox;
 let select;
 
@@ -60,50 +56,6 @@ function setup() {
 	/* 设置帧率:  frameRate(120); */
 
 	/* ------------------DOM---------------- */
-
-	/* 更改质量 */
-	massInput = createInput(planetMass);// 创建输入框
-	massInput.size(50); // 设置输入框的宽度为 50 像素
-	massInput.position(windowWidth - 55, height - 30); 
-	updateMassButton = createButton('Update Mass');// 创建按钮
-	updateMassButton.position(windowWidth - 155, height - 30);
-	updateMassButton.mousePressed(updateMass);
-
-	/* 更改离心率 */
-	eccentricityInput = createInput('0');
-	eccentricityInput.size(50); 
-	eccentricityInput.position(windowWidth - 55, height - 55);
-	updateEccentricityButton = createButton('Update e');
-	updateEccentricityButton.position(windowWidth - 155, height - 55);
-	updateEccentricityButton.mousePressed(updateEccentricityInput);0
-
-	/* 更改速度 */
-	velxInput = createInput('0');
-	velxInput.size(30);
-	velxInput.position(windowWidth - 115, height - 80); 
-	updateVelxButton = createButton('v_x');
-	updateVelxButton.position(windowWidth - 155, height - 80);
-	updateVelxButton.mousePressed(updateVelx);
-	velyInput = createInput();
-	velyInput.size(30); 
-	velyInput.position(windowWidth - 35, height - 80); 
-	updateVelyButton = createButton('v_y');
-	updateVelyButton.position(windowWidth - 75, height - 80);
-	updateVelyButton.mousePressed(updateVely);
-
-	/* 更改位置 */
-	posxInput = createInput();
-	posxInput.size(30); 
-	posxInput.position(windowWidth - 115, height - 105); 
-	updatePosxButton = createButton('p_x');
-	updatePosxButton.position(windowWidth - 155, height - 105);
-	updatePosxButton.mousePressed(updatePosx);
-	posyInput = createInput(sun.pos.y);
-	posyInput.size(30); 
-	posyInput.position(windowWidth - 35, height - 105); 
-	updatePosyButton = createButton('p_y');
-	updatePosyButton.position(windowWidth - 75, height - 105);
-	updatePosyButton.mousePressed(updatePosy);
 
 	/* 创建是否为鼠标射击模式 */
 	checkbox = createCheckbox('shooting', false);
@@ -245,7 +197,7 @@ function draw() {
 	
 	if(selectingPlanet === null && selectingSun === null){//选中状态禁用发射器
 		/* 更新发射器状态并且绘制发射器 */
-		shoot.update(Gravity, sunMass, planteID, planets, select, shooting_mode);
+		shoot.update(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode);
 		shoot.draw();
 	} 
 
@@ -335,7 +287,7 @@ function emptyTrack(){
 	trailLayer.clear();//清空轨迹图层所有轨迹
 }
 
-function deletePlanetSun(){//只要被行星被选择就可以删除，鼠标选择或者select框选择
+function deletePlanetSun(){//只要被行星被框选就可以删除，鼠标左键或者select框选择
     if (selectedObject !== null) {
 		if(selectedObject === sun) {
 			sun = null;
@@ -360,58 +312,77 @@ function deletePlanetSun(){//只要被行星被选择就可以删除，鼠标选
 
 function Pause(){
     paused = !paused
-}
-
-function updateMass() {//更新质量
-	var newMass = float(massInput.value());// 将输入框的值转换为浮点数
-	
-	if (!isNaN(newMass) && selectedObject) {// 检查值的有效性，确保它是一个数  
-		selectedObject.mass = newMass;
-		selectedObject.radius = 2.5 * Math.log10(selectedObject.mass) + 5;
-		if(selectedObject.radius <= 0) selectedObject.radius = 0.1
+	if(paused){
+		$('#pause').text("继续");
+	}else{
+		$('#pause').text("暂停");
 	}
 }
 
-function updateEccentricityInput() {//更新离心率
-	var newEccentricity = float(eccentricityInput.value());// 将输入框的值转换为浮点数
-	
-	//满足条件才能更改离心率
-	if (sun !== null && !isNaN(newEccentricity) && selectedObject && selectedObject!==sun && selectedObject.vel.x==0 && selectedObject.pos.y === sun.pos.y) {
-		selectedObject.e = newEccentricity;
-		var r0 = abs(selectedObject.pos.x - sun.pos.x);//矢径的模
-		var c0_2 = (1 + selectedObject.e) * r0;//圆锥曲线的半正焦弦  若var c0_2 = (1 - selectedObject.e) * r0;时，且0 < e < 1时为小椭圆
-		selectedObject.vel = createVector(0,
-			sqrt(Gravity*sun.mass* (2/r0 + (sq(selectedObject.e)-1)/c0_2)));
-		selectedObject.vel_0 = createVector(selectedObject.vel.x, selectedObject.vel.y);
+function editShowPlanetSun(){//只要被行星被选择就可以删除，鼠标选择或者select框选择
+    if (selectedObject !== null) {
+		paused = true;
+		$('#pause').text("继续");
+
+		$('#myModal').modal('show');
+		if(selectedObject === sun){
+			var jsonString = JSON.stringify(selectedObject, null, "\t");
+		}else{
+			let tem = {};
+			let allowedKeys = ["R", "G", "B", "pos", "vel", "mass"];
+
+			for (let key in selectedObject) {
+				if (selectedObject.hasOwnProperty(key) && allowedKeys.includes(key)) {
+					tem[key] = selectedObject[key];
+				}
+			}
+			if(selectedObject.standardOrbit) tem["e"] = selectedObject.e;
+			var jsonString = JSON.stringify(tem, null, "\t");
+		}
+		$("#simData").val(jsonString)
+
+		// 获取要修改的元素
+		var modalTitle = document.getElementById("myModalLabel");
+		if(selectedObject === sun) modalTitle.innerHTML = '编辑数据   太阳';
+		else modalTitle.innerHTML = '编辑数据   行星'+String(selectedObject.ID);
+		modalTitle.style.color = `rgb(${selectedObject.R}, ${selectedObject.G}, ${selectedObject.B})`;
 	}
 }
 
-function updateVelx () {
-	var newVelx = float(velxInput.value());
-	if (!isNaN(newVelx) && selectedObject && selectedObject !== sun) {
-		selectedObject.vel.x = newVelx;
-		// if(newVelx !== 0)	selectedObject.standardOrbit = false;
+function editPlanetSun(){
+	try{
+		if(JSON.parse($("#simData").val())==undefined){
+			alert('数据非法')
+			return
+		}
+		var newData = JSON.parse($("#simData").val());
+		// $.cookie('sim_data', simData, { expires: 365 });
+	}catch (e){
+		alert('数据非法')
 	}
-}
 
-function updateVely () {
-	var newVely = float(velyInput.value());
-	if (!isNaN(newVely) && selectedObject && selectedObject !== sun) {
-		selectedObject.vel.y = newVely;
-	}
-}
-
-function updatePosx () {
-	var newPosx = float(posxInput.value());
-	if (!isNaN(newPosx) && selectedObject) {
-		selectedObject.pos.x = newPosx;
-	}
-}
-
-function updatePosy () {
-	var newPosy = float(posyInput.value());
-	if (!isNaN(newPosy) && selectedObject) {
-		selectedObject.pos.y = newPosy;
+	if(selectedObject !== null && typeof newData === 'object' && typeof selectedObject === 'object'){
+		for (let key in newData) {
+			if(key==="e"){
+				/* 修改离心率 */
+				if(sun && selectedObject && selectedObject!==sun && selectedObject.vel.x==0 && selectedObject.pos.y === sun.pos.y){
+					selectedObject.e = newData.e;
+					var r0 = abs(selectedObject.pos.x - sun.pos.x);//矢径的模
+					var c0_2 = (1 + selectedObject.e) * r0;//圆锥曲线的半正焦弦  若var c0_2 = (1 - selectedObject.e) * r0;时，且0 < e < 1时为小椭圆
+					selectedObject.vel = createVector(0,
+						sqrt(Gravity*sun.mass* (2/r0 + (sq(selectedObject.e)-1)/c0_2)));
+					selectedObject.vel_0 = createVector(selectedObject.vel.x, selectedObject.vel.y);
+				} 
+			} else {
+				selectedObject[key] = newData[key];
+			}
+		}
+		if(selectedObject !== sun){
+			selectedObject.pos = createVector(float(selectedObject.pos.x), float(selectedObject.pos.y));
+			selectedObject.vel = createVector(float(selectedObject.vel.x), float(selectedObject.vel.y));
+		} else {
+			sunMass = selectedObject.mass;
+		}
 	}
 }
 
@@ -503,11 +474,11 @@ function saveModel () {
 	saveData.epoch = epoch;
 	saveData.dt = dt;
 
-	saveJSON(saveData, modelName);
+	saveJSON(saveData, modelName);//直接将对象转化为JSON文件
 }
 
 function LoadModel() {
-	loadJSON(loadjsonPath, function(data) {
+	loadJSON(loadjsonPath, function(data) {//直接从JSON文件读取对象
 		let options = select.elt.options;// 获取选项列表
 		for (let i= options.length - 1; i > 0; i--) {// 遍历选项列表，找到要删除的选项并移除
 			options[i].remove();
