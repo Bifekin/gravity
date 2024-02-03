@@ -80,6 +80,7 @@ body {
 
 
 
+
 #context-menu {
     display: none;
     position: absolute;
@@ -87,7 +88,7 @@ body {
     border: 1px solid #ccc;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     padding: 8px;
-    min-width: 120px; /* 设置最小宽度，适应内容 */
+    min-width: 100px; /* 设置最小宽度，适应内容 */
 }
 
 .menu-item {
@@ -109,5 +110,32 @@ body {
 }
 
 
+.sub-menu {
+    display: none;
+    position: absolute;
+    background-color: rgba(243, 244, 244, 0.781);
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    margin: 0;
+    min-width: 60px;
+    top: 44px;
+    left: 100%;
+    list-style: none;
+    /* margin-left: 1px; 调整二级菜单的左侧间距，使其与一级菜单对齐 */
+}
 
+.sub-menu li {
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.sub-menu-item li:last-child {
+    border-bottom: none;
+}
+
+.sub-menu-item:hover {
+    background-color: #eaeaea; /* 鼠标悬停时的柔和背景色 */
+}
 

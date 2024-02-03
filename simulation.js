@@ -6,8 +6,8 @@ var planets = [] ;
 var shoot; //发射器
 
 //标记运行状态
-var paused = true;//是否处于暂停运行状态
-var shooting_mode = false;//是否处于可以鼠标发射模型
+var paused = false;//是否处于暂停运行状态
+var shooting_mode = true;//是否处于可以鼠标发射模型
 
 //定义鼠标选中对象
 var selectingPlanet = null;//鼠标正在选中的行星
@@ -32,7 +32,7 @@ let select;
 
 //模型文件位置
 modelName = "model_1.json";//保存的模型名称
-loadjsonPath =  'model/threeBody_circles.json';//加载的模型位置
+loadjsonPath =  'model/fourStar.json';//加载的模型位置
 
 
 function preload() {
@@ -58,11 +58,11 @@ function setup() {
 	/* ------------------DOM---------------- */
 
 	/* 创建是否为鼠标射击模式 */
-	checkbox = createCheckbox('shooting', false);
+	checkbox = createCheckbox('shooting', shooting_mode);
 	checkbox.style('color', '#000000');  // 设置文字颜色
 	checkbox.style('background-color', '#ffffff');  // 设置背景颜色
   	checkbox.changed(updateCheckbox);
-	checkbox.position(270, height - 30); 
+	checkbox.position(70, height - 30); 
 
 	/* 创建 select 元素 */
 	select = createSelect();
@@ -71,23 +71,13 @@ function setup() {
 	select.changed(handleSelect);// 添加选择事件
 
 	/* 重置行星为初速度，初始位置 */
-	resetButton = createButton('reset');
-	resetButton.position(120, 7);
-	resetButton.mousePressed(function() {
-		reset(selectedObject);
-	});
 	resetallButton = createButton('reset all');
 	resetallButton.position(170, 7);
 	resetallButton.mousePressed(resetAll);
 
 	/* 更新行星初速度，初始位置 */
-	updateInitButton = createButton('update');
-	updateInitButton.position(250, 7);
-	updateInitButton.mousePressed(function() {
-		updateInit(selectedObject);
-	});
 	updateInitallButton = createButton('update all');
-	updateInitallButton.position(310, 7);
+	updateInitallButton.position(239, 7);
 	updateInitallButton.mousePressed(updateInitAll);
 
 	/* 读取和保存文件 */
@@ -196,9 +186,14 @@ function draw() {
 	if(sun !== null) sun.draw(selectingSun);
 	
 	if(selectingPlanet === null && selectingSun === null){//选中状态禁用发射器
+		let lt = planets.length;
 		/* 更新发射器状态并且绘制发射器 */
 		shoot.update(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode);
 		shoot.draw();
+		if(lt < planets.length) {
+			selectedObject = planets[planets.length - 1];
+			select.value(String(selectedObject.ID));
+		}
 	} 
 
 	/* 显示选中的行星或者太阳的信息 */
@@ -223,29 +218,6 @@ function draw() {
 function keyPressed() {
 	if (key === " ") {
 	  paused = !paused;//暂停或者停止暂停
-	}
-  
-	/* 删除 行星或太阳 */
-	if (key === "d" || key === "D") {//鼠标选中才能删除
-		if (selectingPlanet !== null) {
-			//删除select元素
-			let options = select.elt.options;// 获取选项列表
-			for (let i = 0; i < options.length; i++) {// 遍历选项列表，找到要删除的选项并移除
-				if (options[i].text == selectingPlanet.ID) {
-					options[i].remove();
-					break; 
-				}
-			}
-			//删除行星
-			var selectedIndex = planets.indexOf(selectingPlanet);
-			planets.splice(selectedIndex, 1);
-			selectingPlanet = null;
-			selectedObject = null;
-		} else if(selectingSun !== null){
-			sun = null;
-			selectingSun = null;
-			selectedObject = null;
-		}
 	}
 }
 
@@ -287,7 +259,7 @@ function emptyTrack(){
 	trailLayer.clear();//清空轨迹图层所有轨迹
 }
 
-function deletePlanetSun(){//只要被行星被框选就可以删除，鼠标左键或者select框选择
+function deletePlanetSun(){//行星被框选就可以删除
     if (selectedObject !== null) {
 		if(selectedObject === sun) {
 			sun = null;
@@ -319,7 +291,7 @@ function Pause(){
 	}
 }
 
-function editShowPlanetSun(){//只要被行星被选择就可以删除，鼠标选择或者select框选择
+function editShowPlanetSun(){//打开编辑框
     if (selectedObject !== null) {
 		paused = true;
 		$('#pause').text("继续");
@@ -349,15 +321,15 @@ function editShowPlanetSun(){//只要被行星被选择就可以删除，鼠标�
 	}
 }
 
-function editPlanetSun(){
+function editPlanetSun(){//保存编辑数据
 	try{
 		if(JSON.parse($("#simData").val())==undefined){
-			alert('数据非法')
+			alert('失败！数据非法')
 			return
 		}
 		var newData = JSON.parse($("#simData").val());
 		// $.cookie('sim_data', simData, { expires: 365 });
-	}catch (e){
+	} catch (e){
 		alert('数据非法')
 	}
 
@@ -412,34 +384,47 @@ function handleSelect() {
 	}
 }
 
-function reset (resetPlanet) {//重置行星
-	if(resetPlanet === null) return;
-	if(sun !== null && resetPlanet === sun) return; 
+function reset (planet) {//重置行星
+	if(planet === null) return;
+	if(sun !== null && planet === sun) return; 
 	
-	resetPlanet.vel = resetPlanet.vel_0.copy();
-	resetPlanet.pos = resetPlanet.pos_0.copy();
-	resetPlanet.prevPos = createVector(0, 0);
+	planet.vel = planet.vel_0.copy();
+	planet.pos = planet.pos_0.copy();
+	planet.prevPos = createVector(0, 0);
 	paused = true;
+	$('#pause').text("继续");
 }
 
-function resetAll () {//重置行星
+function resetAll () {//重置所有行星
 	for(var i = 0; i < planets.length; i++) {
 		reset(planets[i]);
 	}
 }
 
-function updateInit (updateInitPlanet) {//重置行星
-	if(updateInitPlanet === null) return;
-	if(sun !== null && updateInitPlanet === sun) return; 
+function resetPlanet () {
+	if(selectedObject !== null && selectedObject !==sun) {
+		reset(selectedObject);
+	}
+}
+
+function updateInit (planet) {//更新行星位置，重置时会回到这个位置
+	if(planet === null) return;
+	if(sun !== null && planet === sun) return; 
 	
-	updateInitPlanet.vel_0 = updateInitPlanet.vel.copy();
-	updateInitPlanet.pos_0 = updateInitPlanet.pos.copy();
-	updateInitPlanet.prevPos = createVector(0, 0);
+	planet.vel_0 = planet.vel.copy();
+	planet.pos_0 = planet.pos.copy();
+	planet.prevPos = createVector(0, 0);
 }
 
 function updateInitAll () {
 	for(var i = 0; i < planets.length; i++) {
 		updateInit(planets[i]);
+	}
+}
+
+function updatePlanet () {
+	if(selectedObject !== null && selectedObject !==sun) {
+		updateInit(selectedObject);
 	}
 }
 
@@ -525,9 +510,5 @@ function LoadModel() {
 		epoch = data.epoch;
 		dt = data.dt;
 	});
-}
-
-function addPlanet(){
-	window.alert("还未实现！意义不大")
 }
 /*--------------------------------------DOM 函数------------------------------------ */

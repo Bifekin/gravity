@@ -1,13 +1,20 @@
 <html>
 <head>
+  <!-- 设置字符集为UTF-8 -->
   <meta charset="UTF-8">
+  
+  <!-- 引入p5.js库，用于图形绘制和交互 -->
   <script language="javascript" type="text/javascript" src="libraries/p5.js"></script>
 
+  <!-- 引入样式表和Bootstrap库 -->
   <link rel="stylesheet" type="text/css" href="css/styles.css" />
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+  
+  <!-- 引入jQuery和Bootstrap的JavaScript库 -->
   <script type="text/javascript" src="libs/jquery-1.12.4.min.js"></script>
   <script type="text/javascript" src="libs/bootstrap.min.js"></script>
 
+  <!-- 引入其他JavaScript文件，包括Sun.js、Planet.js、Shooter.js、simulation.js -->
   <script language="javascript" type="text/javascript" src="Sun.js"></script>
   <script language="javascript" type="text/javascript" src="Planet.js"></script>
   <script language="javascript" type="text/javascript" src="Shooter.js"></script>
@@ -16,12 +23,12 @@
 
 <body>
   <!-- 在 body 内部创建一个上下文菜单的容器 -->
-	<div id="context-menu">
+  <div id="context-menu">
     <div class="menu-item" id="pause" onclick="Pause()">暂停</div>
     <!-- 菜单项：行星列表，包含一个动态生成的二级菜单 -->
     <div class="menu-item" id="listAllPlanets" onmouseenter="delayedShowSubMenu(this)" onmouseleave="delayedHideSubMenu()">
       行星列表
-      <ul class="sub-menu" id="planetSubMenu" onmouseenter="" onmouseleave="">
+      <ul class="sub-menu" id="planetSubMenu" onmouseenter="" onmouseleave="startHideTimer()">
         <!-- 二级菜单项将在此动态添加 -->
       </ul>
     </div>
@@ -34,9 +41,11 @@
     <div class="menu-item" onclick="deletePlanetSun()">删除</div>
   </div>
 
-	<!-- 你的页面内容 -->
+  <!-- 你的页面内容 -->
 
-	<script>
+  <script>
+    let delayTimer; // 用于延时显示的定时器
+
     // 显示上下文菜单
     function showContextMenu(event) {
       event.preventDefault();
@@ -54,7 +63,6 @@
       planetNames.forEach(planetName => {
         const listItem = document.createElement("li");
         listItem.textContent = planetName;
-        listItem.className = "sub-menu-item";
         listItem.onclick = function (event) {
           // 这里添加每个二级菜单项的功能
           console.log("点击了", planetName);
@@ -63,6 +71,62 @@
         planetSubMenu.appendChild(listItem);
       });
     }
+
+    // 显示二级菜单（带延迟）
+    function delayedShowSubMenu(element) {
+      delayTimer = setTimeout(function() {
+        showSubMenu(element);
+      }, 1000); // 1秒后显示二级菜单
+    }
+
+    // 显示二级菜单
+    function showSubMenu(element) {
+      clearTimeout(delayTimer); // 清除延时定时器
+      const planetSubMenu = document.getElementById("planetSubMenu");
+      planetSubMenu.style.display = "block";
+    }
+
+	function delayedHideSubMenu(element) {
+      delayTimer2 = setTimeout(function() {
+		hideSubMenu();
+      }, 1000); 
+    }
+
+    // 隐藏二级菜单
+    function hideSubMenu() {
+      clearTimeout(delayTimer); // 清除延时定时器
+	    clearTimeout(delayTimer2); // 清除延时隐藏定时器
+      const planetSubMenu = document.getElementById("planetSubMenu");
+      planetSubMenu.style.display = "none";
+    }
+
+	function isMouseInsideSubMenu(event) {
+		const planetSubMenu = document.getElementById("planetSubMenu");
+		const relatedTarget = event.relatedTarget;
+
+		if (relatedTarget && (relatedTarget === planetSubMenu || planetSubMenu.contains(relatedTarget))) {
+			// 鼠标在二级菜单内
+      clearTimeout(delayTimer); // 清除延时定时器
+	    clearTimeout(delayTimer2); // 清除延时隐藏定时器
+			return true;
+		} else {
+			// 鼠标在二级菜单外
+			return false;
+		}
+	}
+
+	// 用于判断鼠标在二级菜单内还是外
+	function hideSubMenu1(event) {
+		if (!isMouseInsideSubMenu(event)) {
+			// 鼠标在二级菜单外，执行关闭二级菜单的逻辑
+			const planetSubMenu = document.getElementById("planetSubMenu");
+			planetSubMenu.style.display = "none";
+		} else {
+
+		}
+	}
+
+
     // 隐藏上下文菜单
     function hideContextMenu() {
       const contextMenu = document.getElementById("context-menu");
@@ -72,61 +136,11 @@
       contextMenu.preventHide = false;
     }
 
-    let delayShowTimer, delayHideTimer; // 用于延时显示的定时器
-    // 显示二级菜单（带延迟）
-    function delayedShowSubMenu(element) {
-      clearTimeout(delayHideTimer); // 清除延时隐藏定时器
-      delayShowTimer = setTimeout(function() {
-        showSubMenu(element);
-      }, 200); // ms
-    }
-    // 显示二级菜单
-    function showSubMenu(element) {
-      // clearTimeout(delayShowTimer); // 清除延时定时器
-      const planetSubMenu = document.getElementById("planetSubMenu");
-      planetSubMenu.style.display = "block";
-    }
-    // 隐藏二级菜单（带延迟）
-    function delayedHideSubMenu(element) {
-      clearTimeout(delayShowTimer); // 清除延时定时器
-        delayHideTimer = setTimeout(function() {
-        hideSubMenu();
-        }, 500); 
-      }
-      // 隐藏二级菜单
-      function hideSubMenu() {
-        const planetSubMenu = document.getElementById("planetSubMenu");
-        planetSubMenu.style.display = "none";
-      }
-
-
     // 添加事件监听器，使上下文菜单在右击页面时显示，并在点击页面其他地方时隐藏
     document.addEventListener("contextmenu", showContextMenu);
     document.addEventListener("click", hideContextMenu);
   </script>
 
-
-
-	<!-- <button id="edit" data-toggle="modal" data-target="#myModal">编辑</button> -->
-	<!-- Modal -->
-	<div  class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-	<div class="modal-dialog" role="document">
-		<div style="background-color: #33000000" class="modal-content">
-		<div class="modal-header">
-			<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-			<h4 style="color: #00ddff" class="modal-title" id="myModalLabel">编辑参数</h4>
-		</div>
-		<div class="modal-body" style="background-color: #33333333">
-			<textarea id="simData" style="background-color: #33333333;color: #ffffff;"  class="form-control" rows="20"></textarea>
-		</div>
-		<div class="modal-footer">
-			<button style="color: #00ddff;background-color: #ffffff" type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-			<button onclick="editPlanetSun()" style="background-color: #00ddff" type="button" class="btn btn-primary" data-dismiss="modal">保存参数</button>
-		</div>
-		</div>
-	</div>
-	</div>
+  <!-- ...（你的其他代码）... -->
 </body>
 </html>
-
-

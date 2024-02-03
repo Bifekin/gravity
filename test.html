@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Submenu Example</title>
+    <style>
+        #context-menu {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 8px;
+            min-width: 120px;
+        }
+
+        .menu-item {
+            cursor: default;
+            padding: 8px 12px;
+            border-bottom: 1px solid #ccc;
+            outline: none;
+            user-select: none;
+            transition: background-color 0.3s;
+            color: #333;
+            position: relative;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:hover {
+            background-color: #eaeaea;
+        }
+
+        .sub-menu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%;
+            min-width: 120px;
+        }
+
+        .menu-item:hover .sub-menu {
+            display: block;
+        }
+
+        .sub-menu-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ccc;
+            user-select: none;
+            color: #333;
+        }
+
+        .sub-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .sub-menu-item:hover {
+            background-color: #eaeaea;
+        }
+    </style>
+</head>
+<body>
+
+<div id="context-menu">
+    <div class="menu-item">
+        编辑
+        <ul class="sub-menu">
+            <li class="sub-menu-item">编辑1</li>
+            <li class="sub-menu-item">编辑2</li>
+        </ul>
+    </div>
+    <div class="menu-item">
+        动态菜单
+        <ul class="sub-menu">
+            <!-- 这里没有写死具体的子菜单项 -->
+        </ul>
+    </div>
+</div>
+
+<script>
+    // 简化的代码，实际项目中可能需要更复杂的逻辑
+    document.addEventListener("DOMContentLoaded", function () {
+        const dynamicMenu = document.querySelector(".menu-item:last-child .sub-menu");
+
+        // 动态添加子菜单项
+        function addDynamicMenuItem(text) {
+            const item = document.createElement("li");
+            item.textContent = text;
+            item.classList.add("sub-menu-item");
+            dynamicMenu.appendChild(item);
+        }
+
+        // 模拟页面交互
+        document.querySelector(".menu-item:last-child").addEventListener("click", function () {
+            const itemName = prompt("请输入新的子菜单项名称:");
+            if (itemName) {
+                addDynamicMenuItem(itemName);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
