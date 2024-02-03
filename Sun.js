@@ -30,7 +30,7 @@ function Sun(x,y,mass) {
 		textAlign(LEFT, TOP);
 		text("Sun " , 10, 10);
 		text("Mass: " + this.mass, 10, 30);
-		text("Position: (" + nfc(this.pos.x, 1, 2) + ", " + nfc(this.pos.y, 1, 2) + ")", 10, 50);
+		text("Position: (" + nfc(this.pos.x, 1) + ", " + nfc(this.pos.y, 1) + ")", 10, 50);
 		pop();
 	  };
 }

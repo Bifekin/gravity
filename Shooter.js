@@ -123,29 +123,29 @@ function Shooter() {
 	}
 
 	this.draw = function() {
-			textSize(12);
-			if ((this.shooting) || (this.c_shooting)) {
-				/* Draw the line and the arraow */
-				stroke(255);
-				line(this.x1-5,this.y1, this.x1+5, this.y1);
-				line(this.x1,this.y1-5, this.x1, this.y1+5);
-				line(this.x1, this.y1, this.x2, this.y2);
+		textSize(12);
+		if ((this.shooting) || (this.c_shooting)) {
+			/* Draw the line and the arraow */
+			stroke(255);
+			line(this.x1-5,this.y1, this.x1+5, this.y1);
+			line(this.x1,this.y1-5, this.x1, this.y1+5);
+			line(this.x1, this.y1, this.x2, this.y2);
 
-				/* Draw the futur planet */
-				noStroke();
-				fill(this.R,this.G,this.B);
-				ellipse(this.x2, this.y2, 10, 10);
+			/* Draw the futur planet */
+			noStroke();
+			fill(this.R,this.G,this.B);
+			ellipse(this.x2, this.y2, 10, 10);
 
-				push();
-				fill(255);
-				translate( (this.x1+this.x2)/2, (this.y1+this.y2)/2 );
-				if (this.x2 > this.x1) {
-			        	rotate( atan2(this.y2-this.y1,this.x2-this.x1) );
-				} else {
-			        	rotate( atan2(this.y1-this.y2,this.x1-this.x2) );
-				}
-				text(nfc(this.vel,1,1), 0, -5);
-				pop();
+			push();
+			fill(255);
+			translate( (this.x1+this.x2)/2, (this.y1+this.y2)/2 );
+			if (this.x2 > this.x1) {
+					rotate( atan2(this.y2-this.y1,this.x2-this.x1) );
+			} else {
+					rotate( atan2(this.y1-this.y2,this.x1-this.x2) );
 			}
+			text(nfc(this.vel, 1), 0, -5);
+			pop();
+		}
 	}
 }

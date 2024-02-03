@@ -1,7 +1,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <script language="javascript" type="text/javascript" src="libraries/p5.js"></script>
+  <script language="javascript" type="text/javascript" src="libs/p5.js"></script>
 
   <link rel="stylesheet" type="text/css" href="css/styles.css" />
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
@@ -31,7 +31,7 @@
     <div class="menu-item" onclick="editShowPlanetSun()">编辑</div>
     <div class="menu-item" onclick="resetPlanet()">位置重置</div>
     <div class="menu-item" onclick="updatePlanet()">位置更新</div>
-    <div class="menu-item" onclick="deletePlanetSun()">删除</div>
+    <div class="menu-item" onclick="deletePlanetSun(event)">删除</div>
   </div>
 
 	<!-- 你的页面内容 -->
@@ -47,21 +47,8 @@
 
       // 动态生成“行星列表”二级菜单项
       const planetSubMenu = document.getElementById("planetSubMenu");
-      planetSubMenu.innerHTML = ""; // 清空已有的二级菜单项
-
       // 添加动态生成的二级菜单项
-      const planetNames = ["编辑1", "编辑2", /* 可以根据需要添加更多项 */];
-      planetNames.forEach(planetName => {
-        const listItem = document.createElement("li");
-        listItem.textContent = planetName;
-        listItem.className = "sub-menu-item";
-        listItem.onclick = function (event) {
-          // 这里添加每个二级菜单项的功能
-          console.log("点击了", planetName);
-          event.stopPropagation(); // 阻止事件冒泡，防止点击二级菜单项时触发上下文菜单的隐藏
-        };
-        planetSubMenu.appendChild(listItem);
-      });
+      updateSubMenu(event);
     }
     // 隐藏上下文菜单
     function hideContextMenu() {
@@ -82,27 +69,31 @@
     }
     // 显示二级菜单
     function showSubMenu(element) {
-      // clearTimeout(delayShowTimer); // 清除延时定时器
       const planetSubMenu = document.getElementById("planetSubMenu");
       planetSubMenu.style.display = "block";
     }
     // 隐藏二级菜单（带延迟）
     function delayedHideSubMenu(element) {
       clearTimeout(delayShowTimer); // 清除延时定时器
-        delayHideTimer = setTimeout(function() {
-        hideSubMenu();
-        }, 500); 
-      }
-      // 隐藏二级菜单
-      function hideSubMenu() {
-        const planetSubMenu = document.getElementById("planetSubMenu");
-        planetSubMenu.style.display = "none";
-      }
+      delayHideTimer = setTimeout(function() {
+      hideSubMenu();
+      }, 500); 
+    }
+    // 隐藏二级菜单
+    function hideSubMenu() {
+      const planetSubMenu = document.getElementById("planetSubMenu");
+      planetSubMenu.style.display = "none";
+    }
 
 
     // 添加事件监听器，使上下文菜单在右击页面时显示，并在点击页面其他地方时隐藏
     document.addEventListener("contextmenu", showContextMenu);
     document.addEventListener("click", hideContextMenu);
+    // 在一级菜单点击时阻止事件冒泡
+    document.getElementById("context-menu").addEventListener("click", function (event) {
+      event.stopPropagation();
+    });
+    
   </script>
 
 

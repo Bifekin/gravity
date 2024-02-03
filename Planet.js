@@ -14,7 +14,6 @@ function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
 	this.ID = ID;
 	this.standardOrbit = standardOrbit;//是否为单恒星系统的按键以离心率为e的圆锥曲线标准发射 等价于 初速度满足垂直矢径
 	this.e = e;//单恒星系统行星的离心率，单恒星系统才考虑这个参数,否则为无效参数
-	this.selectDom = false;//通过select来选中对象
 
 	this.draw = function(selectingPlanet, trailLayer) {
 		/* Draw planet */
@@ -32,9 +31,9 @@ function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
 			trailLayer.strokeWeight(this.radius/100 + 0.8);
 		  	trailLayer.line(this.prevPos.x, this.prevPos.y, this.pos.x, this.pos.y);
 		}
-
+		
 		// 如果行星被鼠标选中，或者被select选中
-		if (selectingPlanet === this || this.selectDom) {
+		if (selectingPlanet === this) {
 			/* 绘制虚线框 */
 			push();
 			noFill();
@@ -127,17 +126,17 @@ function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
 		textAlign(LEFT, TOP);
 		text("ID: ", 10, 10);
 		text("Mass: " + this.mass, 10, 50);
-		text("Speed: " + nfc(this.vel.mag(), 1, 2), 10, 70);
-		text("Velocity: (" + nfc(this.vel.x, 1, 2) + ", " + nfc(this.vel.y, 1, 2) + ")", 10, 90);
-		text("Position: (" + nfc(this.pos.x, 1, 2) + ", " + nfc(this.pos.y, 1, 2) + ")", 10, 110);
-		text("初始位置: (" + nfc(this.pos_0.x, 1, 2) + ", " + nfc(this.pos_0.y, 1, 2) + ")", 10, 130);
-		text("初速度: (" + nfc(this.vel_0.x, 1, 2) + ", " + nfc(this.vel_0.y, 1, 2) + ")", 10, 150);
+		text("Speed: " + nfc(this.vel.mag(), 2), 10, 70);
+		text("Velocity: (" + nfc(this.vel.x, 1) + ", " + nfc(this.vel.y, 1) + ")", 10, 90);
+		text("Position: (" + nfc(this.pos.x, 1) + ", " + nfc(this.pos.y, 1) + ")", 10, 110);
+		text("初始位置: (" + nfc(this.pos_0.x, 1) + ", " + nfc(this.pos_0.y, 1) + ")", 10, 130);
+		text("初速度: (" + nfc(this.vel_0.x, 1) + ", " + nfc(this.vel_0.y, 1) + ")", 10, 150);
 		if(this.standardOrbit && sun !== null) {
 			if(this.e === 0) text("标准轨迹发射: 圆",10,190);
 			if(this.e < 1 && this.e > 0) text("标准轨迹发射: 椭圆",10,190);
 			if(this.e === 1) text("标准轨迹发射: 抛物线",10,190);
 			if(this.e > 1) text("标准轨迹发射: 双曲线",10,190)
-			text("离心率: " + nfc(this.e, 2, 2), 10,210);
+			text("离心率: " + nfc(this.e, 1), 10,210);
 			var r0 = abs(sun.pos.x - this.pos_0.x);
 			var v1 = sqrt(Gravity * sunMass/ r0);
 			var v2 = sqrt(2 * Gravity * sunMass / r0);

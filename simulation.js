@@ -1,30 +1,29 @@
 // sketch.js 文件中定义了一些全局变量和函数，其中 setup 和 draw 函数是 p5.js 提供的特殊函数，用于设置初始状态和在每一帧绘制画面。这两个函数的执行由 p5.js 引擎控制，而不是手动调用。
 
 //定义对象
-var sun; //不考虑自身运动的特殊“行星”
-var planets = [] ;
-var shoot; //发射器
+let sun; //不考虑自身运动的特殊“行星”
+let planets = [] ;
+let shoot; //发射器
 
 //标记运行状态
-var paused = false;//是否处于暂停运行状态
-var shooting_mode = true;//是否处于可以鼠标发射模型
+let paused = false;//是否处于暂停运行状态
+let shooting_mode = true;//是否处于可以鼠标发射模型
 
 //定义鼠标选中对象
-var selectingPlanet = null;//鼠标正在选中的行星
-var selectingSun = null;//鼠标正在选中的太阳
-var selectedObject = null;//上一个选中的对象（太阳或行星）或者当前选中的对象(如果存在)
-var planteID  = {value:1}; //行星编号
+let selectingPlanet = null;//正在选中的行星
+let selectingSun = null;//正在选中的太阳
+let planteID  = {value:1}; //行星编号
 
 //设置背景
 let backgroundImage; //设置背景图片
 let trailLayer; // 轨迹图层
 
 //设置参数
-var sunMass = 100; 
-var planetMass = 1; //范围一般为1-1000
-var Gravity = 1000;
-var epoch = 500; //每次p5.js函数调用draw()函数时，进行引力计算并更新参数的次数
-var dt = 0.1/epoch; //微分时间 和epoch对应，dt小==>误差小, epoch大，卡顿
+let sunMass = 100; 
+let planetMass = 1; //范围一般为1-1000
+let Gravity = 1000;
+let epoch = 500; //每次p5.js函数调用draw()函数时，进行引力计算并更新参数的次数
+let dt = 0.1/epoch; //微分时间 和epoch对应，dt小==>误差小, epoch大，卡顿
 
 //DOM
 let checkbox;
@@ -60,7 +59,7 @@ function setup() {
 	/* 创建是否为鼠标射击模式 */
 	checkbox = createCheckbox('shooting', shooting_mode);
 	checkbox.style('color', '#000000');  // 设置文字颜色
-	checkbox.style('background-color', '#ffffff');  // 设置背景颜色
+	checkbox.style('background-color', '#ffffffea');  // 设置背景颜色
   	checkbox.changed(updateCheckbox);
 	checkbox.position(70, height - 30); 
 
@@ -152,7 +151,6 @@ function draw() {
 		}
 	}
 
-
 	/* -------------渲染光晕---------------- */
 	haloLayer.shader(haloShader);// 使用光晕着色器 每次渲染帧(frame)时套用Shader
 	// 利用p5.js的rect()建立一个矩形，这个矩形将被shader拿來处理
@@ -185,20 +183,21 @@ function draw() {
 	/* 太阳存在则绘制太阳 */
 	if(sun !== null) sun.draw(selectingSun);
 	
-	if(selectingPlanet === null && selectingSun === null){//选中状态禁用发射器
-		let lt = planets.length;
-		/* 更新发射器状态并且绘制发射器 */
-		shoot.update(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode);
-		shoot.draw();
-		if(lt < planets.length) {
-			selectedObject = planets[planets.length - 1];
-			select.value(String(selectedObject.ID));
-		}
-	} 
+	/* 更新发射器状态并且绘制发射器 */
+	let lt = planets.length;
+	shoot.update(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode);
+	shoot.draw();
+	if(lt < planets.length) {/* 自动选中新建的行星 */
+		selectingPlanet = planets[planets.length - 1];
+		selectingSun = null;
+		select.value(selectingPlanet.ID);
+	}
 
 	/* 显示选中的行星或者太阳的信息 */
-	if (selectedObject !== null) {
-		selectedObject.displayInfo();
+	if (selectingPlanet !== null) {
+		selectingPlanet.displayInfo();
+	} else if (selectingSun !== null) {
+		selectingSun.displayInfo();
 	}
 
 	// 在右上角显示鼠标坐标
@@ -223,12 +222,11 @@ function keyPressed() {
 
 function mouseClicked() {
 	/* 用鼠标选中行星或者太阳 */
-	selectingPlanet = null;
-	selectingSun = null;
 	for (var i = 0; i < planets.length; i++) {
 		var d = dist(mouseX, mouseY, planets[i].pos.x, planets[i].pos.y);
 		if (d < planets[i].radius) {
 			selectingPlanet = planets[i];
+			selectingSun = null;
 			break;
 		}
 	}
@@ -236,18 +234,13 @@ function mouseClicked() {
 		var d = dist(mouseX, mouseY, sun.pos.x, sun.pos.y);
 		if (d < sun.radius) {
 			selectingSun = sun;
+			selectingPlanet = null;
 		} 
 	}
-
+	/* 点击选中行星后更新select */ 
 	if(selectingPlanet !== null){
-		if(selectedObject !== null && selectedObject !== sun){//取消select 选中
-			selectedObject.selectDom = false;
-		}
-		selectedObject = selectingPlanet;
-		select.value(selectedObject.ID);
-
+		select.value(selectingPlanet.ID);
 	} else if(selectingSun !== null){
-		selectedObject = selectingSun;
 		select.value("行星列表");//重置select
 	}
 }
@@ -255,31 +248,28 @@ function mouseClicked() {
                                               
 
 /*--------------------------------------DOM 函数------------------------------------ */
-function emptyTrack(){
+function emptyTrack() {
 	trailLayer.clear();//清空轨迹图层所有轨迹
 }
 
-function deletePlanetSun(){//行星被框选就可以删除
-    if (selectedObject !== null) {
-		if(selectedObject === sun) {
-			sun = null;
-        	selectingSun = null;
-			selectedObject = null;
-		} else {
-			let options = select.elt.options;// 获取选项列表
-			for (let i = 0; i < options.length; i++) {// 遍历选项列表，找到要删除的选项并移除
-				if (options[i].text == selectedObject.ID) {
+function deletePlanetSun(event) {//行星被框选就可以删除
+	if(selectingSun !== null) {
+		sun = null;
+		selectingSun = null;
+	} else if(selectingPlanet !== null) {
+		let options = select.elt.options;// 获取选项列表
+		for (let i = 0; i < options.length; i++) {// 遍历选项列表，找到要删除的选项并移除
+			if (options[i].text == selectingPlanet.ID) {
 				options[i].remove();
 				break; 
-				}
 			}
-
-			var selectedIndex = planets.indexOf(selectedObject);
-			planets.splice(selectedIndex, 1);
-			selectedObject = null;
-			selectingPlanet = null;
 		}
+
+		var selectedIndex = planets.indexOf(selectingPlanet);
+		planets.splice(selectedIndex, 1);
+		selectingPlanet = null;
 	}
+	updateSubMenu(event);
 }
 
 function Pause(){
@@ -292,33 +282,44 @@ function Pause(){
 }
 
 function editShowPlanetSun(){//打开编辑框
-    if (selectedObject !== null) {
+	noLoop();
+
+	if(selectingSun !== null) {
 		paused = true;
 		$('#pause').text("继续");
 
+		event.stopPropagation();
 		$('#myModal').modal('show');
-		if(selectedObject === sun){
-			var jsonString = JSON.stringify(selectedObject, null, "\t");
-		}else{
-			let tem = {};
-			let allowedKeys = ["R", "G", "B", "pos", "vel", "mass"];
+		var jsonString = JSON.stringify(selectingSun, null, "\t");
+		$("#simData").val(jsonString);
+		let modalTitle = document.getElementById("myModalLabel");
+		modalTitle.innerHTML = '编辑数据   太阳';
+		modalTitle.style.color = `rgb(${selectingSun.R}, ${selectingSun.G}, ${selectingSun.B})`;
+	} else if (selectingPlanet !== null) {
+		paused = true;
+		$('#pause').text("继续");
 
-			for (let key in selectedObject) {
-				if (selectedObject.hasOwnProperty(key) && allowedKeys.includes(key)) {
-					tem[key] = selectedObject[key];
-				}
+		event.stopPropagation();
+		$('#myModal').modal('show');
+		let tem = {};
+		let allowedKeys = ["R", "G", "B", "pos", "vel", "mass"];
+
+		for (let key in selectingPlanet) {
+			if (selectingPlanet.hasOwnProperty(key) && allowedKeys.includes(key)) {
+				tem[key] = selectingPlanet[key];
 			}
-			if(selectedObject.standardOrbit) tem["e"] = selectedObject.e;
-			var jsonString = JSON.stringify(tem, null, "\t");
 		}
+		if(selectingPlanet.standardOrbit) tem["e"] = selectingPlanet.e;
+		let jsonString = JSON.stringify(tem, null, "\t");
 		$("#simData").val(jsonString)
-
-		// 获取要修改的元素
-		var modalTitle = document.getElementById("myModalLabel");
-		if(selectedObject === sun) modalTitle.innerHTML = '编辑数据   太阳';
-		else modalTitle.innerHTML = '编辑数据   行星'+String(selectedObject.ID);
-		modalTitle.style.color = `rgb(${selectedObject.R}, ${selectedObject.G}, ${selectedObject.B})`;
+		let modalTitle = document.getElementById("myModalLabel");
+		modalTitle.innerHTML = '编辑数据   行星'+String(selectingPlanet.ID);
+		modalTitle.style.color = `rgb(${selectingPlanet.R}, ${selectingPlanet.G}, ${selectingPlanet.B})`;
 	}
+
+	$('#myModal').on('hidden.bs.modal', function () {
+		loop();
+	});
 }
 
 function editPlanetSun(){//保存编辑数据
@@ -333,29 +334,30 @@ function editPlanetSun(){//保存编辑数据
 		alert('数据非法')
 	}
 
-	if(selectedObject !== null && typeof newData === 'object' && typeof selectedObject === 'object'){
+	if(selectingSun !== null && typeof newData === 'object' && typeof selectingSun === 'object') {
+		for (let key in newData) {
+				selectingSun[key] = newData[key];
+		}
+		sunMass = selectingSun.mass;
+	} else if(selectingPlanet !== null && typeof newData === 'object' && typeof selectingPlanet === 'object') {
 		for (let key in newData) {
 			if(key==="e"){
 				/* 修改离心率 */
-				if(sun && selectedObject && selectedObject!==sun && selectedObject.vel.x==0 && selectedObject.pos.y === sun.pos.y){
-					selectedObject.e = newData.e;
-					var r0 = abs(selectedObject.pos.x - sun.pos.x);//矢径的模
-					var c0_2 = (1 + selectedObject.e) * r0;//圆锥曲线的半正焦弦  若var c0_2 = (1 - selectedObject.e) * r0;时，且0 < e < 1时为小椭圆
-					selectedObject.vel = createVector(0,
-						sqrt(Gravity*sun.mass* (2/r0 + (sq(selectedObject.e)-1)/c0_2)));
-					selectedObject.vel_0 = createVector(selectedObject.vel.x, selectedObject.vel.y);
+				if(sun !== null && selectingPlanet.vel.x==0 && selectingPlanet.pos.y === sun.pos.y){
+					selectingPlanet.e = newData.e;
+					var r0 = abs(selectingPlanet.pos.x - sun.pos.x);//矢径的模
+					var c0_2 = (1 + selectingPlanet.e) * r0;//圆锥曲线的半正焦弦  若var c0_2 = (1 - selectingPlanet.e) * r0;时，且0 < e < 1时为小椭圆
+					selectingPlanet.vel = createVector(0,
+						sqrt(Gravity*sun.mass* (2/r0 + (sq(selectingPlanet.e)-1)/c0_2)));
+					selectingPlanet.vel_0 = createVector(selectingPlanet.vel.x, selectingPlanet.vel.y);
 				} 
 			} else {
-				selectedObject[key] = newData[key];
+				selectingPlanet[key] = newData[key];
 			}
 		}
-		if(selectedObject !== sun){
-			selectedObject.pos = createVector(float(selectedObject.pos.x), float(selectedObject.pos.y));
-			selectedObject.vel = createVector(float(selectedObject.vel.x), float(selectedObject.vel.y));
-		} else {
-			sunMass = selectedObject.mass;
-		}
-	}
+		selectingPlanet.pos = createVector(float(selectingPlanet.pos.x), float(selectingPlanet.pos.y));
+		selectingPlanet.vel = createVector(float(selectingPlanet.vel.x), float(selectingPlanet.vel.y));
+	}		
 }
 
 function updateCheckbox() {
@@ -369,18 +371,13 @@ function handleSelect() {
 	
 	for(var i = 0; i < planets.length; i++){
 		if(planets[i].ID == selectedValue){
-			planets[i].selectDom = true;
-			if(selectedObject !== null && selectedObject !== sun){
-				selectedObject.selectDom = false;
-			}
-			selectedObject = planets[i];
 			selectingPlanet = planets[i];
+
 		}
 	}
 	if(selectedValue == "行星列表") {
-		if(selectedObject !== null && selectedObject !== sun){
-			selectedObject.selectDom = false;
-		}
+		selectingPlanet = null;
+		selectingSun = null;
 	}
 }
 
@@ -402,8 +399,8 @@ function resetAll () {//重置所有行星
 }
 
 function resetPlanet () {
-	if(selectedObject !== null && selectedObject !==sun) {
-		reset(selectedObject);
+	if(selectingPlanet !== null) {
+		reset(selectingPlanet);
 	}
 }
 
@@ -423,8 +420,8 @@ function updateInitAll () {
 }
 
 function updatePlanet () {
-	if(selectedObject !== null && selectedObject !==sun) {
-		updateInit(selectedObject);
+	if(selectingPlanet !== null) {
+		updateInit(selectingPlanet);
 	}
 }
 
@@ -469,7 +466,6 @@ function LoadModel() {
 			options[i].remove();
 		}
 
-		// console.log(data);
 		planets = [];
 		sun = null;
 		// 使用 for...in 遍历 JSON 对象的属性
@@ -509,6 +505,36 @@ function LoadModel() {
 		Gravity = data.Gravity;
 		epoch = data.epoch;
 		dt = data.dt;
+	});
+
+	selectingPlanet = null;
+	selectingSun = null;
+	select.value("行星列表");
+}
+
+function updateSubMenu (event) {
+	planetSubMenu.innerHTML = ""; // 清空已有的二级菜单项
+	let planetNames = [];
+	for(let i = 0; i < planets.length; i++) {
+		planetNames.push(planets[i].ID);
+	}
+	planetNames.forEach(planetName => {
+		const listItem = document.createElement("li");
+		listItem.textContent = planetName;
+		listItem.className = "sub-menu-item";
+		listItem.onclick = function (event) {
+			// 这里添加每个二级菜单项的功能
+			for(let i = 0; i < planets.length; i++) {
+				if (planets[i].ID == planetName) {
+					selectingPlanet = planets[i];
+					selectingSun = null;
+					select.value(selectingPlanet.ID);
+					break;
+				}
+			}
+			event.stopPropagation(); // 阻止事件冒泡，防止点击二级菜单项时触发上下文菜单的隐藏
+		};
+		planetSubMenu.appendChild(listItem);
 	});
 }
 /*--------------------------------------DOM 函数------------------------------------ */
