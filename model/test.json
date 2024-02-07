@@ -1,0 +1,61 @@
+{
+    "sun": null,
+    "planets": {
+      "1": {
+        "R": 184,
+        "G": 129,
+        "B": 254,
+        "mass": 1,
+        "standarOrbit": false,
+        "e": 0,
+        "posx": 400,
+        "posy": 400,
+        "velx": 5,
+        "vely": 0,
+        "ID": 1
+      },
+      "2": {
+        "R": 105,
+        "G": 97,
+        "B": 44,
+        "mass": 1,
+        "standarOrbit": false,
+        "e": 0,
+        "posx": 450,
+        "posy": 400,
+        "velx": -5,
+        "vely": 0,
+        "ID": 2
+      },
+      "3": {
+        "R": 253,
+        "G": 230,
+        "B": 190,
+        "mass": 1,
+        "standarOrbit": false,
+        "e": 0,
+        "posx": 400,
+        "posy": 800,
+        "velx": 5,
+        "vely": 0,
+        "ID": 3
+      },
+      "4": {
+        "R": 114,
+        "G": 175,
+        "B": 242,
+        "mass": 1,
+        "standarOrbit": false,
+        "e": 0,
+        "posx": 450,
+        "posy": 800,
+        "velx": -5,
+        "vely": 0,
+        "ID": 4
+      }
+    },
+    "Gravity": 1000,
+    "epoch": 200,
+    "dt": 0.0005
+  }
+  

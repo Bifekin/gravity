@@ -46,11 +46,14 @@ class Particle {
       this.particles = [];
       this.lifespan = 255;
       // this.intact = true;
-      let rows = 10;
-      let cols = 10;
-      for (let i = 0; i < rows * cols; i++) {
-        this.particles.push(new Particle(x + (i % cols) * r, y + (floor(i / rows)) * r,
-            R, G, B, r));
+      let rows = 20;
+      let cols = 20;
+      for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+              let offsetX = j * r - (cols * r) / 2;
+              let offsetY = i * r - (rows * r) / 2;
+              this.particles.push(new Particle(x + offsetX, y + offsetY, R, G, B, r));
+          }
       }
       for (let particle of this.particles) {
         let force = p5.Vector.random2D();
@@ -66,7 +69,7 @@ class Particle {
     }
   
     update() {
-        this.lifespan = this.lifespan - 4;
+        this.lifespan--;
         for (let particle of this.particles) {
             particle.update();
         }

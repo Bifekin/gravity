@@ -32,7 +32,7 @@ let select;
 
 //模型文件位置
 modelName = "model_1.json";//保存的模型名称
-loadjsonPath =  'model/threeBody_circles.json';//加载的模型位置
+loadjsonPath =  'model/threeBody_8.json';//加载的模型位置
 
 
 function preload() {
@@ -314,6 +314,16 @@ function deletePlanet (planet) {
 	var selectedIndex = planets.indexOf(planet);
 	planets.splice(selectedIndex, 1);
 }
+
+function showNotification(message, duration) {//显示操作提示
+    var notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.classList.remove('hidden');
+
+    setTimeout(function() {
+        notification.classList.add('hidden');
+    }, duration);
+}
                                               
 
 /*--------------------------------------DOM 函数------------------------------------ */
@@ -325,8 +335,12 @@ function deletePlanetSun(event) {//行星被框选就可以删除
 	if(selectingSun !== null) {
 		sun = null;
 		selectingSun = null;
+		showNotification('删除成功', 2000);
 	} else if(selectingPlanet !== null) {
 		deletePlanet(selectingPlanet);
+		showNotification('删除成功', 2000);
+	} else {
+		showNotification('选择删除对象', 2000);
 	}
 	updateSubMenu(event);
 }
@@ -376,6 +390,7 @@ function editShowPlanetSun(){//打开编辑框
 		modalTitle.style.color = `rgb(${selectingPlanet.R}, ${selectingPlanet.G}, ${selectingPlanet.B})`;
 	} else {
 		loop();
+		showNotification('选择编辑对象', 2000);
 	}
 
 	$('#myModal').on('hidden.bs.modal', function () {
@@ -386,13 +401,14 @@ function editShowPlanetSun(){//打开编辑框
 function editPlanetSun(){//保存编辑数据
 	try{
 		if(JSON.parse($("#simData").val())==undefined){
-			alert('失败！数据非法')
+			showNotification('保存失败，数据非法', 3000);
 			return
 		}
 		var newData = JSON.parse($("#simData").val());
 		// $.cookie('sim_data', simData, { expires: 365 });
 	} catch (e){
-		alert('数据非法')
+		showNotification('保存失败', 3000); // 在屏幕上显示"..."，3秒后自动消失
+		editShowPlanetSun();
 	}
 
 	if(selectingSun !== null && typeof newData === 'object' && typeof selectingSun === 'object') {
@@ -400,6 +416,7 @@ function editPlanetSun(){//保存编辑数据
 				selectingSun[key] = newData[key];
 		}
 		sunMass = selectingSun.mass;
+		showNotification('保存成功', 3000);
 	} else if(selectingPlanet !== null && typeof newData === 'object' && typeof selectingPlanet === 'object') {
 		for (let key in newData) {
 			if(key==="e"){
@@ -418,6 +435,7 @@ function editPlanetSun(){//保存编辑数据
 		}
 		selectingPlanet.pos = createVector(float(selectingPlanet.pos.x), float(selectingPlanet.pos.y));
 		selectingPlanet.vel = createVector(float(selectingPlanet.vel.x), float(selectingPlanet.vel.y));
+		showNotification('保存成功', 3000);
 	}		
 }
 
@@ -457,11 +475,15 @@ function resetAll () {//重置所有行星
 	for(var i = 0; i < planets.length; i++) {
 		reset(planets[i]);
 	}
+	showNotification('重置成功', 2000);
 }
 
 function resetPlanet () {
 	if(selectingPlanet !== null) {
 		reset(selectingPlanet);
+		showNotification('重置成功', 2000);
+	} else {
+		showNotification('选择重置对象', 2000);
 	}
 }
 
@@ -478,11 +500,15 @@ function updateInitAll () {
 	for(var i = 0; i < planets.length; i++) {
 		updateInit(planets[i]);
 	}
+	showNotification('更新成功', 2000);
 }
 
 function updatePlanet () {
 	if(selectingPlanet !== null) {
 		updateInit(selectingPlanet);
+		showNotification('更新成功', 2000);
+	} else {
+		showNotification('选择更新对象', 2000);
 	}
 }
 
@@ -518,6 +544,7 @@ function saveModel () {
 	saveData.dt = dt;
 
 	saveJSON(saveData, modelName);//直接将对象转化为JSON文件
+	showNotification('模型成功保存', 2000);
 }
 
 function LoadModel() {
@@ -571,6 +598,7 @@ function LoadModel() {
 	selectingPlanet = null;
 	selectingSun = null;
 	select.value("行星列表");
+	showNotification('模型成功加载', 2000);
 }
 
 function updateSubMenu (event) {
