@@ -8,10 +8,10 @@
       "mass": 200,
       "standarOrbit": false,
       "e": 0,
-      "posx": 538,
+      "posx": 400,
       "posy": 472.5,
       "velx": 0,
-      "vely": 10,
+      "vely": 18,
       "ID": 1
     },
     "2": {
@@ -21,10 +21,10 @@
       "mass": 400,
       "standarOrbit": false,
       "e": 0,
-      "posx": 999,
+      "posx": 1100,
       "posy": 472.5,
       "velx": 0,
-      "vely": -5,
+      "vely": -9,
       "ID": 2
     }
   },

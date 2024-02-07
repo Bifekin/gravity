@@ -21,7 +21,7 @@ function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
 		noStroke(); // 不绘制边框
 		fill(255, 255, 255, 250); // 使用指定颜色填充，最后一个参数表示透明度
 		translate(this.pos.x, this.pos.y); // 将坐标原点移动到行星位置
-		rotate(this.vel.heading()); // 根据速度的方向进行旋转
+		// rotate(this.vel.heading()); // 根据速度的方向进行旋转
 		ellipse(0, 0, this.radius * 2, this.radius * 2); // 绘制行星，以当前位置为中心
 		pop(); // 恢复之前保存的画布状态
 	
@@ -32,16 +32,23 @@ function Planet(x,y,velx,vely,R,G,B,mass,ID,standardOrbit=false,e=0) {
 		  	trailLayer.line(this.prevPos.x, this.prevPos.y, this.pos.x, this.pos.y);
 		}
 		
-		// 如果行星被鼠标选中，或者被select选中
+		// 显示被选中的效果
 		if (selectingPlanet === this) {
 			/* 绘制虚线框 */
 			push();
 			noFill();
 			stroke(255);
 			strokeWeight(1);
+			
+			// 设置虚线样式
+			drawingContext.setLineDash([2, 2]); // 调整虚线的长度和间隔
+			// 绘制虚线圆形
 			ellipse(this.pos.x, this.pos.y, this.radius * 2 + 20, this.radius * 2 + 20);
+			// 恢复实线样式
+			drawingContext.setLineDash([]);
+			
 			pop();
-		}
+		}  
 
 		// 可视化速度箭头
 		push();

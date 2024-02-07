@@ -13,7 +13,7 @@ function Shooter() {
 	this.c_shooting=false;//标记是否处于键盘发射模型(o键)
 	this.touchKey=false;//用于避免重复触发键盘输入,这种模式常用于检测按键的瞬时触发而不是持续触发
 
-	this.update = function(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode) {
+	this.update = function(Gravity, sunMass, shooting_mode) {
 
 		/* 标准轨道发射器 */
 		if((!this.shooting) && (keyIsPressed) && (key === "o" || key ==='O') && (!this.c_shooting) && (!this.touchKey) && sun !== null) {
@@ -46,11 +46,7 @@ function Shooter() {
 			this.c_shooting = false;
 			this.touchKey = true;
 
-			append(planets, new Planet(this.x1, this.y1,this.vel_x,this.vel_y,this.R,this.G,this.B,planetMass,planteID.value,true,0));
-			select.option(planteID.value);
-			const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
-			selectElement.options[selectElement.length - 1].style.color = `rgb(${this.R}, ${this.G}, ${this.B})`;
-			planteID.value = planteID.value + 1;
+			addNewPlanet(this.x1, this.y1,this.vel_x,this.vel_y,this.R,this.G,this.B,true,0);
 		}//按下Enter确认行星
 
 		if((!this.shooting) && (keyIsPressed)  && (keyCode == ESCAPE) && (this.c_shooting) && (!this.touchKey)) {
@@ -112,11 +108,7 @@ function Shooter() {
 						y_dir = -1;
 					}
 				}
-				append(planets, new Planet(this.x2, this.y2, (x_dir * this.vel_x),(y_dir * this.vel_y),this.R,this.G,this.B,planetMass,planteID.value));
-				select.option(planteID.value);
-				const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
-				selectElement.options[selectElement.length - 1].style.color = `rgb(${this.R}, ${this.G}, ${this.B})`;
-				planteID.value = planteID.value + 1;
+				addNewPlanet(this.x2, this.y2, (x_dir * this.vel_x), (y_dir * this.vel_y), this.R, this.G, this.B);
 			}
 			this.shooting = false;
 		}

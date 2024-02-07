@@ -4,6 +4,7 @@
 let sun; //不考虑自身运动的特殊“行星”
 let planets = [] ;
 let shoot; //发射器
+let particleSystems = []; // 存储所有粒子系统的数组, 碰撞效果
 
 //标记运行状态
 let paused = false;//是否处于暂停运行状态
@@ -12,7 +13,7 @@ let shooting_mode = true;//是否处于可以鼠标发射模型
 //定义鼠标选中对象
 let selectingPlanet = null;//正在选中的行星
 let selectingSun = null;//正在选中的太阳
-let planteID  = {value:1}; //行星编号
+let planteID = 1; //行星编号
 
 //设置背景
 let backgroundImage; //设置背景图片
@@ -22,7 +23,7 @@ let trailLayer; // 轨迹图层
 let sunMass = 100; 
 let planetMass = 1; //范围一般为1-1000
 let Gravity = 1000;
-let epoch = 500; //每次p5.js函数调用draw()函数时，进行引力计算并更新参数的次数
+let epoch = 200; //每次p5.js函数调用draw()函数时，进行引力计算并更新参数的次数
 let dt = 0.1/epoch; //微分时间 和epoch对应，dt小==>误差小, epoch大，卡顿
 
 //DOM
@@ -31,7 +32,7 @@ let select;
 
 //模型文件位置
 modelName = "model_1.json";//保存的模型名称
-loadjsonPath =  'model/fourStar.json';//加载的模型位置
+loadjsonPath =  'model/threeBody_circles.json';//加载的模型位置
 
 
 function preload() {
@@ -108,21 +109,12 @@ function draw() {
 				append(to_splice, i);
 			}
 		}
-		for (var i = 0; i < to_splice.length ; i++) {
-			//删除行星对应的select选项
-			let options = select.elt.options;
-			for (let j = 0; j < options.length; j++) {
-				if (options[j].text == planets[to_splice[i]].ID) {
-					options[j].remove();
-					break; 
-				}
-			}
-			//删除行星
-			planets.splice(to_splice[i], 1);
-
+		for(let i = 0; i < to_splice.length; i++) {
+			deletePlanet(planets[to_splice[i]]);
 		}
 
 		/* 多次计算行星之间的引力并且更新状态 */
+		crash();//是否有行星碰撞
 		for (var k = 0; k < epoch; k++){
 			/* 计算行星之间的引力 */
 			for (var i = 0; i < planets.length; i++) {
@@ -149,34 +141,13 @@ function draw() {
 		for (var i = 0; i < planets.length ; i++) {//绘制行星及其轨迹
 			planets[i].draw(selectingPlanet, trailLayer);
 		}
+
+		for (let ps of particleSystems.slice()) {//显示碰撞的粒子系统
+			  ps.display();
+		}	  
 	}
 
-	/* -------------渲染光晕---------------- */
-	haloLayer.shader(haloShader);// 使用光晕着色器 每次渲染帧(frame)时套用Shader
-	// 利用p5.js的rect()建立一个矩形，这个矩形将被shader拿來处理
-	haloLayer.rect(0, 0, windowWidth, windowHeight);//不管设定多大，矩形都是整个画布大小
-	// 传送参数給Shader
-	haloShader.setUniform("u_resolution", [windowWidth, windowHeight]);//从左下角开始的矩形
-	if(planets.length!==0){
-		haloShader.setUniform('u_numPlanets', planets.length);
-		// 传递行星数据给着色器
-		for (let i = 0; i < planets.length; i++) {
-			haloShader.setUniform(`u_planets[${i}].color`, [planets[i].R/255, planets[i].G/255, planets[i].B/255]);
-			haloShader.setUniform(`u_planets[${i}].position`, [planets[i].pos.x/width * 2, 2 - planets[i].pos.y/height * 2]);
-			haloShader.setUniform(`u_planets[${i}].radius`, planets[i].radius);
-		}
-	} 
-	if(sun !== null){//太阳也用同样方式渲染
-		haloShader.setUniform('u_numPlanets', planets.length + 1);
-		haloShader.setUniform(`u_planets[${planets.length}].color`, [sun.R/255, sun.G/255, sun.B/255]);
-		haloShader.setUniform(`u_planets[${planets.length}].position`, [sun.pos.x/width * 2, 2 - sun.pos.y/height * 2]);
-		haloShader.setUniform(`u_planets[${planets.length}].radius`, sun.radius);
-
-	}
-	if(planets.length === 0 && sun === null) {
-		haloShader.setUniform('u_numPlanets', 0);
-	}
-	haloLayer.resetShader();// 停止使用光晕着色器
+	shadeLight();//渲染光晕
 	blendMode(ADD);
 	image(haloLayer, 0, 0);
 
@@ -185,7 +156,7 @@ function draw() {
 	
 	/* 更新发射器状态并且绘制发射器 */
 	let lt = planets.length;
-	shoot.update(Gravity, sunMass, planetMass, planteID, planets, select, shooting_mode);
+	shoot.update(Gravity, sunMass, shooting_mode);
 	shoot.draw();
 	if(lt < planets.length) {/* 自动选中新建的行星 */
 		selectingPlanet = planets[planets.length - 1];
@@ -193,25 +164,7 @@ function draw() {
 		select.value(selectingPlanet.ID);
 	}
 
-	/* 显示选中的行星或者太阳的信息 */
-	if (selectingPlanet !== null) {
-		selectingPlanet.displayInfo();
-	} else if (selectingSun !== null) {
-		selectingSun.displayInfo();
-	}
-
-	// 在右上角显示鼠标坐标
-	textAlign(RIGHT, TOP);
-	textSize(16);
-	fill(255); // 设置文本颜色为白色
-	text('Mouse: ' + mouseX + ', ' + mouseY, width - 10, 10);
-
-	// 在屏幕右上角显示帧率
-	let currentFrameRate = frameRate();
-	fill(255);
-	textSize(16);
-	textAlign(RIGHT, TOP);
-	text("Frame Rate: " + currentFrameRate.toFixed(2), width - 10, 30);
+	displayInfo();	
 }
 
 function keyPressed() {
@@ -245,6 +198,122 @@ function mouseClicked() {
 	}
 }
 
+function crash () {
+	let crashPlanets = [];
+	let cnt = planets.length;
+	for (var i = 0; i < cnt; i++) {
+		for (var j = i + 1; j < cnt; j++) {
+			let distance = dist(planets[i].pos.x, planets[i].pos.y, planets[j].pos.x, planets[j].pos.y);
+			if(distance <= planets[i].radius + planets[j].radius) {
+				crashPlanets.push(planets[i].ID);
+				crashPlanets.push(planets[j].ID);
+				let newMass = planets[i].mass + planets[j].mass;
+				let velx = (planets[i].vel.x * planets[i].mass + planets[j].vel.x * planets[j].mass)/newMass;
+				let vely = (planets[i].vel.y * planets[i].mass + planets[j].vel.y * planets[j].mass)/newMass;
+				let posx = (planets[i].pos.x+planets[j].pos.x)*0.5;
+				let posy = (planets[i].pos.y+planets[j].pos.y)*0.5;
+				let R = (planets[i].R + planets[j].R) * 0.5;
+				let G = (planets[i].G + planets[j].G) * 0.5;
+				let B = (planets[i].B + planets[j].B) * 0.5;
+				addNewPlanet(posx, posy, velx, vely, R, G, B,false,0,newMass);
+				
+				particleSystems.push(new ParticleSystem(posx,posy,R,G,B,1));	
+			}
+		}
+	}
+	for (let A in crashPlanets) {
+		for(let i = 0; i < planets.length; i++) {
+			if(crashPlanets[A] == planets[i].ID){ 
+				deletePlanet(planets[i]);
+			}
+		}
+	}
+	for (let ps of particleSystems.slice()) {
+		if (ps.lifespan < 0) {
+		  let index = particleSystems.indexOf(ps);
+		  if (index !== -1) {
+			particleSystems.splice(index, 1);
+		  }
+		} else {
+		  ps.display();
+		  ps.update();
+		}
+	}	  
+}
+
+function shadeLight () {
+	haloLayer.shader(haloShader);// 使用光晕着色器 每次渲染帧(frame)时套用Shader
+	// 利用p5.js的rect()建立一个矩形，这个矩形将被shader拿來处理
+	haloLayer.rect(0, 0, windowWidth, windowHeight);//不管设定多大，矩形都是整个画布大小
+	// 传送参数給Shader
+	haloShader.setUniform("u_resolution", [windowWidth, windowHeight]);//从左下角开始的矩形
+	if(planets.length!==0){
+		haloShader.setUniform('u_numPlanets', planets.length);
+		// 传递行星数据给着色器
+		for (let i = 0; i < planets.length; i++) {
+			haloShader.setUniform(`u_planets[${i}].color`, [planets[i].R/255, planets[i].G/255, planets[i].B/255]);
+			haloShader.setUniform(`u_planets[${i}].position`, [planets[i].pos.x/width * 2, 2 - planets[i].pos.y/height * 2]);
+			haloShader.setUniform(`u_planets[${i}].radius`, planets[i].radius);
+		}
+	} 
+	if(sun !== null){//太阳也用同样方式渲染
+		haloShader.setUniform('u_numPlanets', planets.length + 1);
+		haloShader.setUniform(`u_planets[${planets.length}].color`, [sun.R/255, sun.G/255, sun.B/255]);
+		haloShader.setUniform(`u_planets[${planets.length}].position`, [sun.pos.x/width * 2, 2 - sun.pos.y/height * 2]);
+		haloShader.setUniform(`u_planets[${planets.length}].radius`, sun.radius);
+
+	}
+	if(planets.length === 0 && sun === null) {
+		haloShader.setUniform('u_numPlanets', 0);
+	}
+	haloLayer.resetShader();// 停止使用光晕着色器
+}
+
+function displayInfo () {
+	/* 显示选中的行星或者太阳的信息 */
+	if (selectingPlanet !== null) {
+		selectingPlanet.displayInfo();
+	} else if (selectingSun !== null) {
+		selectingSun.displayInfo();
+	}
+
+	// 在右上角显示鼠标坐标
+	textAlign(RIGHT, TOP);
+	textSize(16);
+	fill(255); // 设置文本颜色为白色
+	text('Mouse: ' + mouseX + ', ' + mouseY, width - 10, 10);
+
+	// 在屏幕右上角显示帧率
+	let currentFrameRate = frameRate();
+	fill(255);
+	textSize(16);
+	textAlign(RIGHT, TOP);
+	text("Frame Rate: " + currentFrameRate.toFixed(0), width - 10, 30);
+}
+
+function addNewPlanet (x,y,velx,vely,R,G,B,standardOrbit=false,e=0,newMass=planetMass) {
+	append(planets, new Planet(x, y, velx, vely, R, G, B, newMass, planteID, standardOrbit, e));
+	select.option(planteID);
+	const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
+	selectElement.options[selectElement.length - 1].style.color = `rgb(${this.R}, ${this.G}, ${this.B})`;
+	planteID = planteID + 1;
+}
+
+function deletePlanet (planet) {
+	if(selectingPlanet == planet) {
+		selectingPlanet = null
+	}
+
+	let options = select.elt.options;// 获取选项列表
+	for (let i = 0; i < options.length; i++) {// 遍历选项列表，找到要删除的选项并移除
+		if (options[i].text == planet.ID) {
+			options[i].remove();
+			break; 
+		}
+	}
+	var selectedIndex = planets.indexOf(planet);
+	planets.splice(selectedIndex, 1);
+}
                                               
 
 /*--------------------------------------DOM 函数------------------------------------ */
@@ -257,17 +326,7 @@ function deletePlanetSun(event) {//行星被框选就可以删除
 		sun = null;
 		selectingSun = null;
 	} else if(selectingPlanet !== null) {
-		let options = select.elt.options;// 获取选项列表
-		for (let i = 0; i < options.length; i++) {// 遍历选项列表，找到要删除的选项并移除
-			if (options[i].text == selectingPlanet.ID) {
-				options[i].remove();
-				break; 
-			}
-		}
-
-		var selectedIndex = planets.indexOf(selectingPlanet);
-		planets.splice(selectedIndex, 1);
-		selectingPlanet = null;
+		deletePlanet(selectingPlanet);
 	}
 	updateSubMenu(event);
 }
@@ -315,6 +374,8 @@ function editShowPlanetSun(){//打开编辑框
 		let modalTitle = document.getElementById("myModalLabel");
 		modalTitle.innerHTML = '编辑数据   行星'+String(selectingPlanet.ID);
 		modalTitle.style.color = `rgb(${selectingPlanet.R}, ${selectingPlanet.G}, ${selectingPlanet.B})`;
+	} else {
+		loop();
 	}
 
 	$('#myModal').on('hidden.bs.modal', function () {
@@ -497,10 +558,10 @@ function LoadModel() {
 				 `rgb(${data.planets[id].R},
 					  ${data.planets[id].G},
 					  ${data.planets[id].B})`;
-				planteID.value = max(planteID.value,int(id));
+				planteID = max(planteID,int(id));
 			}
 		}
-		planteID.value = planteID.value + 1;
+		planteID = planteID + 1;
 
 		Gravity = data.Gravity;
 		epoch = data.epoch;
@@ -514,27 +575,19 @@ function LoadModel() {
 
 function updateSubMenu (event) {
 	planetSubMenu.innerHTML = ""; // 清空已有的二级菜单项
-	let planetNames = [];
 	for(let i = 0; i < planets.length; i++) {
-		planetNames.push(planets[i].ID);
-	}
-	planetNames.forEach(planetName => {
 		const listItem = document.createElement("li");
-		listItem.textContent = planetName;
+		listItem.textContent = planets[i].ID;
 		listItem.className = "sub-menu-item";
+		listItem.style.color = `rgb(${planets[i].R}, ${planets[i].G}, ${planets[i].B})`;
 		listItem.onclick = function (event) {
 			// 这里添加每个二级菜单项的功能
-			for(let i = 0; i < planets.length; i++) {
-				if (planets[i].ID == planetName) {
-					selectingPlanet = planets[i];
-					selectingSun = null;
-					select.value(selectingPlanet.ID);
-					break;
-				}
-			}
+			selectingPlanet = planets[i];
+			selectingSun = null;
+			select.value(selectingPlanet.ID);
 			event.stopPropagation(); // 阻止事件冒泡，防止点击二级菜单项时触发上下文菜单的隐藏
 		};
 		planetSubMenu.appendChild(listItem);
-	});
+	}
 }
 /*--------------------------------------DOM 函数------------------------------------ */

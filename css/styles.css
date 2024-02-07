@@ -53,6 +53,8 @@ body {
     top: 44px;
     left: 100%;
     list-style: none;
+    max-height: 228px; /* 设置最大高度 */
+    overflow-y: auto; /* 设置垂直滚动条 */
 }
 
 .sub-menu li {
