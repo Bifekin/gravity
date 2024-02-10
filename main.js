@@ -8,7 +8,8 @@ let particleSystems = []; // 存储所有粒子系统的数组, 碰撞效果
 
 //标记运行状态
 let paused = false;//是否处于暂停运行状态
-let shooting_mode = true;//是否处于可以鼠标发射模型
+let shooting_mode = false;//是否处于可以鼠标发射模型
+let crashed = false;//是否具有碰撞破碎逻辑
 
 //定义鼠标选中对象
 let selectingPlanet = null;//正在选中的行星
@@ -23,16 +24,15 @@ let trailLayer; // 轨迹图层
 let sunMass = 100; 
 let planetMass = 1; //范围一般为1-1000
 let Gravity = 1000;
-let epoch = 200; //每次p5.js函数调用draw()函数时，进行引力计算并更新参数的次数
+let epoch = 1000; //每次p5.js函数调用draw()函数时，进行引力计算并更新参数的次数
 let dt = 0.1/epoch; //微分时间 和epoch对应，dt小==>误差小, epoch大，卡顿
 
 //DOM
-let checkbox;
-let select;
+let select;//行星列表选项
+let fileInput;//加载模型时需要
 
 //模型文件位置
-modelName = "model_1.json";//保存的模型名称
-loadjsonPath =  'model/threeBody_8.json';//加载的模型位置
+modelName = "threeBody_.json";//保存的模型名称
 
 
 function preload() {
@@ -58,11 +58,18 @@ function setup() {
 	/* ------------------DOM---------------- */
 
 	/* 创建是否为鼠标射击模式 */
-	checkbox = createCheckbox('shooting', shooting_mode);
-	checkbox.style('color', '#000000');  // 设置文字颜色
-	checkbox.style('background-color', '#ffffffea');  // 设置背景颜色
-  	checkbox.changed(updateCheckbox);
-	checkbox.position(70, height - 30); 
+	let checkbox_shoot = createCheckbox('shooting', shooting_mode);
+	checkbox_shoot.style('color', '#000000');  // 设置文字颜色
+	checkbox_shoot.style('background-color', '#ffffffea');  // 设置背景颜色
+  	checkbox_shoot.changed(updateCheckbox_shoot);
+	checkbox_shoot.position(40, height - 30); 
+
+	/* 创建是否为鼠标射击模式 */
+	let checkbox_crash = createCheckbox('crash', crashed);
+	checkbox_crash.style('color', '#000000');  // 设置文字颜色
+	checkbox_crash.style('background-color', '#ffffffea');  // 设置背景颜色
+  	checkbox_crash.changed(updateCheckbox_crash);
+	checkbox_crash.position(120, height - 30); 
 
 	/* 创建 select 元素 */
 	select = createSelect();
@@ -71,22 +78,24 @@ function setup() {
 	select.changed(handleSelect);// 添加选择事件
 
 	/* 重置行星为初速度，初始位置 */
-	resetallButton = createButton('reset all');
+	let resetallButton = createButton('reset all');
 	resetallButton.position(170, 7);
 	resetallButton.mousePressed(resetAll);
 
 	/* 更新行星初速度，初始位置 */
-	updateInitallButton = createButton('update all');
+	let updateInitallButton = createButton('update all');
 	updateInitallButton.position(239, 7);
 	updateInitallButton.mousePressed(updateInitAll);
 
 	/* 读取和保存文件 */
-	saveModelButton = createButton('save');
+	let saveModelButton = createButton('save');
 	saveModelButton.position(400, 7);
 	saveModelButton.mousePressed(saveModel);
-	loadModelButton = createButton('load');
+	let loadModelButton = createButton('load');
 	loadModelButton.position(447, 7);
-	loadModelButton.mousePressed(LoadModel);
+	loadModelButton.mousePressed(openFileInput);
+	fileInput = createFileInput(LoadModel);// 创建文件输入元素并隐藏
+	fileInput.hide();
 
 	/* -----------------DOM------------------ */
 }
@@ -114,7 +123,7 @@ function draw() {
 		}
 
 		/* 多次计算行星之间的引力并且更新状态 */
-		crash();//是否有行星碰撞
+		if(crashed) {crash();}//是否有行星碰撞
 		for (var k = 0; k < epoch; k++){
 			/* 计算行星之间的引力 */
 			for (var i = 0; i < planets.length; i++) {
@@ -439,10 +448,14 @@ function editPlanetSun(){//保存编辑数据
 	}		
 }
 
-function updateCheckbox() {
+function updateCheckbox_shoot() {
 	shoot.shooting = false;
 
 	shooting_mode =!shooting_mode;
+}
+
+function updateCheckbox_crash () {
+	crashed = !crashed;
 }
 
 function handleSelect() {
@@ -544,11 +557,16 @@ function saveModel () {
 	saveData.dt = dt;
 
 	saveJSON(saveData, modelName);//直接将对象转化为JSON文件
-	showNotification('模型成功保存', 2000);
+	showNotification('模型成功保存，保存之前记得先更新状态', 2000);
 }
 
-function LoadModel() {
-	loadJSON(loadjsonPath, function(data) {//直接从JSON文件读取对象
+function openFileInput() {// 当加载模型按钮被点击时触发文件输入元素的点击事件
+  fileInput.elt.click();
+}
+
+function LoadModel(file) {
+	if (file.subtype === 'json') { // 检查文件类型是否为JSON
+		data = file.data;
 		let options = select.elt.options;// 获取选项列表
 		for (let i= options.length - 1; i > 0; i--) {// 遍历选项列表，找到要删除的选项并移除
 			options[i].remove();
@@ -582,9 +600,9 @@ function LoadModel() {
 				select.option(int(id));
 				const selectElement = select.elt; // 获取 select 元素的底层 HTML 元素
 				selectElement.options[selectElement.length - 1].style.color =
-				 `rgb(${data.planets[id].R},
-					  ${data.planets[id].G},
-					  ${data.planets[id].B})`;
+				`rgb(${data.planets[id].R},
+					${data.planets[id].G},
+					${data.planets[id].B})`;
 				planteID = max(planteID,int(id));
 			}
 		}
@@ -593,12 +611,18 @@ function LoadModel() {
 		Gravity = data.Gravity;
 		epoch = data.epoch;
 		dt = data.dt;
-	});
 
-	selectingPlanet = null;
-	selectingSun = null;
-	select.value("行星列表");
-	showNotification('模型成功加载', 2000);
+		selectingPlanet = null;
+		selectingSun = null;
+		select.value("行星列表");
+		showNotification('模型成功加载', 2000);
+
+	} else {
+		showNotification('选择正确的JSON文件', 2000);
+		print(file.type)
+		print(file.data)
+		print(file)
+	}
 }
 
 function updateSubMenu (event) {

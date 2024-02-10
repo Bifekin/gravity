@@ -12,7 +12,7 @@
   <script language="javascript" type="text/javascript" src="Planet.js"></script>
   <script language="javascript" type="text/javascript" src="Shooter.js"></script>
   <script language="javascript" type="text/javascript" src="ParticleSystem.js"></script>
-  <script language="javascript" type="text/javascript" src="simulation.js"></script>
+  <script language="javascript" type="text/javascript" src="main.js"></script>
 </head>
 
 <body>
@@ -35,9 +35,11 @@
     <div class="menu-item" onclick="deletePlanetSun(event)">删除</div>
   </div>
 
+  <!-- 显示操作提示 -->
   <div id="notification" class="hidden"></div>
 
-	<!-- 你的页面内容 -->
+  <!-- 选择加载的模型文件 -->
+	<input type="file" id="fileInput" style="display: none;">
 
 	<script>
     // 显示上下文菜单
